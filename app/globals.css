@@ -1,26 +1,337 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* shadcn tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-dm-sans);
+  --font-heading: var(--font-playfair);
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Beauty Room Nini palette */
+  --color-rosa: #C4728A;
+  --color-rosa-dark: #a85a72;
+  --color-rosa-light: #f7e8ed;
+  --color-rosa-mid: #e8c5ce;
+  --color-crema: #fdf6f0;
+  --color-negro: #1a1412;
+  --color-gris: #6b6360;
+  --color-gris-light: #f4f1ef;
+  --color-verde: #4a9b6f;
+  --color-azul: #2B5BA8;
+  --color-naranja: #D4621A;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* shadcn — primary mapped to rosa */
+  --background: #fdf6f0;
+  --foreground: #1a1412;
+  --card: #ffffff;
+  --card-foreground: #1a1412;
+  --popover: #ffffff;
+  --popover-foreground: #1a1412;
+  --primary: #C4728A;
+  --primary-foreground: #ffffff;
+  --secondary: #f7e8ed;
+  --secondary-foreground: #1a1412;
+  --muted: #f4f1ef;
+  --muted-foreground: #6b6360;
+  --accent: #f7e8ed;
+  --accent-foreground: #1a1412;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #e8c5ce;
+  --input: #e8c5ce;
+  --ring: #C4728A;
+  --chart-1: #C4728A;
+  --chart-2: #4a9b6f;
+  --chart-3: #2B5BA8;
+  --chart-4: #D4621A;
+  --chart-5: #8B5CF6;
+  --radius: 1rem;
+  --sidebar: #1a1412;
+  --sidebar-foreground: #f7e8ed;
+  --sidebar-primary: #C4728A;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(196, 114, 138, 0.15);
+  --sidebar-accent-foreground: #f7e8ed;
+  --sidebar-border: rgba(196, 114, 138, 0.2);
+  --sidebar-ring: #C4728A;
+
+  /* Custom brand vars (still accessible as CSS vars) */
+  --rosa: #C4728A;
+  --rosa-dark: #a85a72;
+  --rosa-light: #f7e8ed;
+  --rosa-mid: #e8c5ce;
+  --crema: #fdf6f0;
+  --negro: #1a1412;
+  --gris: #6b6360;
+  --gris-light: #f4f1ef;
+  --verde: #4a9b6f;
+  --azul: #2B5BA8;
+  --naranja: #D4621A;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-dm-sans), sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-playfair), serif;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Calendar overrides for react-big-calendar */
+.rbc-calendar {
+  font-family: var(--font-dm-sans), sans-serif;
+  background: #ffffff;
+  border-radius: 16px;
+}
+.rbc-header {
+  background: #f7e8ed;
+  color: #1a1412;
+  font-weight: 600;
+  padding: 8px 4px;
+  border-bottom: 1px solid #e8c5ce;
+}
+.rbc-time-slot {
+  border-top: 1px solid #f4f1ef;
+}
+.rbc-today {
+  background: #fdf6f0 !important;
+}
+.rbc-event {
+  border-radius: 6px !important;
+  border: none !important;
+  font-size: 12px !important;
+  padding: 2px 6px !important;
+}
+.rbc-event.rbc-selected {
+  box-shadow: 0 0 0 2px #C4728A;
+}
+.rbc-slot-selection {
+  background: rgba(196, 114, 138, 0.2);
+}
+.rbc-toolbar button {
+  color: #1a1412;
+  border: 1px solid #e8c5ce;
+  border-radius: 8px;
+}
+.rbc-toolbar button:hover,
+.rbc-toolbar button.rbc-active {
+  background: #C4728A;
+  color: #ffffff;
+  border-color: #C4728A;
+}
+
+/* ── Animaciones globales ── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%       { transform: translateY(-18px) rotate(1deg); }
+  66%       { transform: translateY(-8px) rotate(-1deg); }
+}
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-24px); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(196,114,138,0.3); }
+  50%       { box-shadow: 0 0 40px rgba(196,114,138,0.6), 0 0 80px rgba(196,114,138,0.2); }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes badge-enter {
+  from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes border-beam-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes sidebar-shimmer {
+  0%, 100% { background-position: -200% 0; }
+  50%       { background-position: 200% 0; }
+}
+
+.animate-float       { animation: float 6s ease-in-out infinite; }
+.animate-float-slow  { animation: float-slow 8s ease-in-out infinite; }
+.animate-gradient-x  {
+  background-size: 200% 200%;
+  animation: gradient-x 4s ease infinite;
+}
+.animate-glow        { animation: glow-pulse 2.5s ease-in-out infinite; }
+.animate-badge       { animation: badge-enter 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-slide-up    { animation: slide-up 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-marquee     { animation: marquee 28s linear infinite; }
+
+/* ── Shimmer button mejorado ── */
+@keyframes btn-glow-pulse {
+  0%, 100% { box-shadow: 0 8px 28px rgba(196,114,138,0.5), 0 2px 8px rgba(196,114,138,0.3); }
+  50%       { box-shadow: 0 14px 50px rgba(196,114,138,0.75), 0 0 40px rgba(196,114,138,0.4); }
+}
+@keyframes btn-sweep {
+  0%   { transform: translateX(-150%) skewX(-20deg); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(250%) skewX(-20deg); opacity: 0; }
+}
+
+.btn-shimmer {
+  position: relative;
+  background: linear-gradient(90deg, #8a3a52 0%, #C4728A 20%, #e8a0b4 42%, #f5d0dc 50%, #e8a0b4 58%, #C4728A 80%, #8a3a52 100%);
+  background-size: 300% auto;
+  animation: shimmer 3s linear infinite, btn-glow-pulse 2.5s ease-in-out infinite;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: 0;
+  width: 45%;
+  height: 120%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+  animation: btn-sweep 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+.btn-shimmer:hover {
+  animation: shimmer 1.5s linear infinite, btn-glow-pulse 1.2s ease-in-out infinite;
+  transform: translateY(-3px) scale(1.05);
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+.btn-shimmer:active {
+  transform: translateY(0) scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* ── 3D Card Flip ── */
+.flip-card {
+  perspective: 1100px;
+}
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.72s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+.flip-card:hover .flip-card-inner,
+.flip-card:focus-within .flip-card-inner {
+  transform: rotateY(180deg);
+}
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* Hover lift para tarjetas */
+.card-lift {
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+}
+.card-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(196,114,138,0.22), 0 4px 12px rgba(196,114,138,0.12);
+}
+
+/* Card rosa: sombra coloreada por defecto */
+.card-rosa {
+  box-shadow: 0 4px 24px rgba(196,114,138,0.10);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+}
+.card-rosa:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 56px rgba(196,114,138,0.25), 0 4px 16px rgba(196,114,138,0.15);
+}
+
+/* Animated gradient background */
+.animated-bg {
+  background: linear-gradient(-45deg, #fdf6f0, #ffffff, #f7e8ed, #fdf6f0);
+  background-size: 400% 400%;
+  animation: gradientShift 14s ease infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f4f1ef;
+}
+::-webkit-scrollbar-thumb {
+  background: #e8c5ce;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C4728A;
 }
