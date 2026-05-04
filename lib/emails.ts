@@ -2,8 +2,6 @@ import { Resend } from "resend";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 interface DatosConfirmacion {
   clienteEmail: string;
   clienteNombre: string;
@@ -16,6 +14,7 @@ interface DatosConfirmacion {
 }
 
 export async function enviarConfirmacionReserva(datos: DatosConfirmacion) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const fechaFormateada = format(parseISO(datos.fecha), "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
 
   const html = `
