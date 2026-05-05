@@ -138,3 +138,114 @@ export async function enviarConfirmacionReserva(datos: DatosConfirmacion) {
 
   return result;
 }
+
+interface LineaReporte {
+  hora: string;
+  cliente: string;
+  servicio: string;
+  profesional: string;
+  precio: number;
+}
+
+interface DatosReporte {
+  fecha: string;
+  reservas: LineaReporte[];
+  totalIngresos: number;
+}
+
+export async function enviarReporteDiario(datos: DatosReporte) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const fechaFormateada = format(parseISO(datos.fecha), "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
+
+  const filas = datos.reservas.length > 0
+    ? datos.reservas.map((r) => `
+      <tr>
+        <td style="padding:10px 12px;color:#1a1412;font-size:13px;border-bottom:1px solid #f4f1ef;">${r.hora}</td>
+        <td style="padding:10px 12px;color:#1a1412;font-size:13px;border-bottom:1px solid #f4f1ef;">${r.cliente}</td>
+        <td style="padding:10px 12px;color:#1a1412;font-size:13px;border-bottom:1px solid #f4f1ef;">${r.servicio}</td>
+        <td style="padding:10px 12px;color:#1a1412;font-size:13px;border-bottom:1px solid #f4f1ef;">${r.profesional}</td>
+        <td style="padding:10px 12px;color:#C4728A;font-size:13px;font-weight:700;border-bottom:1px solid #f4f1ef;text-align:right;">${r.precio.toFixed(2)} €</td>
+      </tr>`).join("")
+    : `<tr><td colspan="5" style="padding:20px;text-align:center;color:#6b6360;font-size:13px;">No hubo citas hoy</td></tr>`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte diario</title>
+</head>
+<body style="margin:0;padding:0;background:#fdf6f0;font-family:'DM Sans',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:32px 16px;">
+
+    <!-- Header -->
+    <div style="background:#1a1412;border-radius:16px 16px 0 0;padding:28px 32px;text-align:center;">
+      <img src="https://beautyroomnini.es/logo-square.png" alt="Beauty Room Nini" width="60" height="60" style="border-radius:50%;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto;" />
+      <p style="color:#C4728A;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0;">Reporte del día</p>
+    </div>
+
+    <!-- Body -->
+    <div style="background:#ffffff;padding:32px;border-left:1px solid #e8c5ce;border-right:1px solid #e8c5ce;">
+
+      <h2 style="color:#1a1412;font-family:Georgia,serif;font-size:20px;margin:0 0 4px;text-transform:capitalize;">${fechaFormateada}</h2>
+      <p style="color:#6b6360;font-size:13px;margin:0 0 24px;">${datos.reservas.length} cita${datos.reservas.length !== 1 ? "s" : ""} realizad${datos.reservas.length !== 1 ? "as" : "a"}</p>
+
+      <!-- Resumen -->
+      <div style="display:flex;gap:12px;margin-bottom:28px;">
+        <div style="flex:1;background:#f7e8ed;border-radius:12px;padding:16px;text-align:center;">
+          <p style="color:#6b6360;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 6px;">Citas</p>
+          <p style="color:#1a1412;font-size:28px;font-weight:700;margin:0;font-family:Georgia,serif;">${datos.reservas.length}</p>
+        </div>
+        <div style="flex:1;background:#f7e8ed;border-radius:12px;padding:16px;text-align:center;">
+          <p style="color:#6b6360;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 6px;">Ingresos</p>
+          <p style="color:#C4728A;font-size:28px;font-weight:700;margin:0;font-family:Georgia,serif;">${datos.totalIngresos.toFixed(2)} €</p>
+        </div>
+      </div>
+
+      <!-- Tabla de citas -->
+      <table style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;">
+        <thead>
+          <tr style="background:#f7e8ed;">
+            <th style="padding:10px 12px;color:#6b6360;font-size:11px;text-transform:uppercase;letter-spacing:1px;text-align:left;font-weight:600;">Hora</th>
+            <th style="padding:10px 12px;color:#6b6360;font-size:11px;text-transform:uppercase;letter-spacing:1px;text-align:left;font-weight:600;">Cliente</th>
+            <th style="padding:10px 12px;color:#6b6360;font-size:11px;text-transform:uppercase;letter-spacing:1px;text-align:left;font-weight:600;">Servicio</th>
+            <th style="padding:10px 12px;color:#6b6360;font-size:11px;text-transform:uppercase;letter-spacing:1px;text-align:left;font-weight:600;">Profesional</th>
+            <th style="padding:10px 12px;color:#6b6360;font-size:11px;text-transform:uppercase;letter-spacing:1px;text-align:right;font-weight:600;">Precio</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas}
+        </tbody>
+        ${datos.reservas.length > 0 ? `
+        <tfoot>
+          <tr style="background:#1a1412;">
+            <td colspan="4" style="padding:12px;color:#f7e8ed;font-size:13px;font-weight:600;">Total del día</td>
+            <td style="padding:12px;color:#C4728A;font-size:15px;font-weight:700;text-align:right;">${datos.totalIngresos.toFixed(2)} €</td>
+          </tr>
+        </tfoot>` : ""}
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#1a1412;border-radius:0 0 16px 16px;padding:20px 32px;text-align:center;">
+      <p style="color:#6b6360;font-size:12px;margin:0;">Beauty Room Nini · beautyroomnini.es</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const result = await resend.emails.send({
+    from: "Beauty Room Nini <citas@beautyroomnini.es>",
+    to: "beautyroom.nini@gmail.com",
+    subject: `📊 Reporte del día — ${fechaFormateada}`,
+    html,
+  });
+
+  if (result.error) {
+    console.error("Resend reporte error:", JSON.stringify(result.error));
+    throw new Error(result.error.message);
+  }
+
+  return result;
+}
