@@ -289,6 +289,10 @@
   height: 100%;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+.flip-card-front {
+  transform: rotateY(0deg);
 }
 .flip-card-back {
   transform: rotateY(180deg);
