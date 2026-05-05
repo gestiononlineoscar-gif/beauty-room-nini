@@ -30,8 +30,7 @@ export async function enviarConfirmacionReserva(datos: DatosConfirmacion) {
 
     <!-- Header -->
     <div style="background:#1a1412;border-radius:16px 16px 0 0;padding:36px 32px 28px;text-align:center;">
-      <div style="font-size:28px;margin-bottom:10px;">💅</div>
-      <h1 style="color:#C4728A;font-family:Georgia,serif;font-size:26px;margin:0 0 4px;letter-spacing:0.5px;">beauty room nini</h1>
+      <img src="https://beautyroomnini.es/logo.png" alt="Beauty Room Nini" width="100" height="100" style="border-radius:50%;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;" />
       <p style="color:#a08880;font-size:12px;margin:0;letter-spacing:1.5px;text-transform:uppercase;">Alcobendas · Madrid</p>
     </div>
 

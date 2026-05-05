@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase";
@@ -48,8 +49,8 @@ export function Sidebar({ usuario }: { usuario: Usuario }) {
       <aside className="hidden md:flex flex-col w-60 min-h-screen bg-[#1a1412] flex-shrink-0">
         {/* Logo */}
         <div className="px-6 py-6 border-b border-[rgba(196,114,138,0.2)]">
-          <Link href="/admin/agenda" className="flex items-center gap-2">
-            <span className="text-xl">💅</span>
+          <Link href="/admin/agenda" className="flex items-center gap-3">
+            <Image src="/logo.png" alt="Beauty Room Nini" width={44} height={44} className="rounded-full flex-shrink-0" />
             <div>
               <p className="text-[#C4728A] font-heading text-base leading-tight">beauty room</p>
               <p className="text-[#C4728A] font-heading text-base leading-tight font-bold">nini</p>
