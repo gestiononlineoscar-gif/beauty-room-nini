@@ -53,8 +53,14 @@ export async function obtenerSlotsDisponibles(
   let current = parse(inicioStr, "HH:mm:ss", baseDate);
   const fin = parse(finStr, "HH:mm:ss", baseDate);
   const finConDuracion = addMinutes(fin, -duracionMin);
+  const ahora = new Date();
+  const esHoy = fecha === format(ahora, "yyyy-MM-dd");
 
   while (!isAfter(current, finConDuracion)) {
+    if (esHoy && !isAfter(current, ahora)) {
+      current = addMinutes(current, 30);
+      continue;
+    }
     const slotFin = addMinutes(current, duracionMin);
     const horaInicioStr = format(current, "HH:mm");
     const horaFinStr = format(slotFin, "HH:mm");
