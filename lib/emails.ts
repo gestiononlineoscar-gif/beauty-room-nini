@@ -93,7 +93,7 @@ export async function enviarConfirmacionReserva(datos: DatosConfirmacion) {
 </html>`;
 
   return resend.emails.send({
-    from: "Beauty Room Nini <noreply@beautyroonnini.com>",
+    from: "Beauty Room Nini <citas@beautyroomnini.es>",
     to: datos.clienteEmail,
     subject: "✅ Cita confirmada — Beauty Room Nini",
     html,
