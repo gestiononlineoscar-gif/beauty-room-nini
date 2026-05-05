@@ -90,6 +90,20 @@ export function ReservaFlujo({ servicios, profesionales, servicioIdInicial, prof
 
     if (existente) {
       clienteId = existente.id;
+
+      // Rate limit: máximo 3 reservas hoy por este cliente
+      const hoy = new Date().toISOString().split("T")[0];
+      const { count } = await supabase
+        .from("reservas")
+        .select("id", { count: "exact", head: true })
+        .eq("cliente_id", clienteId)
+        .eq("fecha", hoy)
+        .neq("estado", "cancelada");
+      if ((count ?? 0) >= 3) {
+        setEnviando(false);
+        alert("Has alcanzado el máximo de reservas para hoy. Llámanos para más información.");
+        return;
+      }
     } else {
       const { data: nuevo } = await supabase
         .from("clientes")

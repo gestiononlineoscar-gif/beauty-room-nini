@@ -3,6 +3,8 @@ import Image from "next/image";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import type { Profesional } from "@/types";
 import { Navbar } from "@/components/public/Navbar";
+
+export const revalidate = 3600;
 import { Footer } from "@/components/public/Footer";
 
 export default async function EquipoPage() {

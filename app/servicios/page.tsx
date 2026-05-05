@@ -3,6 +3,8 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import type { Servicio } from "@/types";
 import { CATEGORIAS_SERVICIOS, ICONOS_CATEGORIA } from "@/types";
 import { Navbar } from "@/components/public/Navbar";
+
+export const revalidate = 3600;
 import { Footer } from "@/components/public/Footer";
 
 export default async function ServiciosPage() {

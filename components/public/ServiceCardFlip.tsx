@@ -37,6 +37,7 @@ export function ServiceCardFlip({ cats, servicios }: Props) {
                     src={IMAGEN_CATEGORIA[cat] ?? "/hero.png"}
                     alt={cat}
                     fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
                     className="object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1a1412]/90 via-[#1a1412]/20 to-transparent" />
