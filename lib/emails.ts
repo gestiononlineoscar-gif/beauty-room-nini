@@ -92,10 +92,17 @@ export async function enviarConfirmacionReserva(datos: DatosConfirmacion) {
 </body>
 </html>`;
 
-  return resend.emails.send({
+  const result = await resend.emails.send({
     from: "Beauty Room Nini <citas@beautyroomnini.es>",
     to: datos.clienteEmail,
     subject: "✅ Cita confirmada — Beauty Room Nini",
     html,
   });
+
+  if (result.error) {
+    console.error("Resend error:", JSON.stringify(result.error));
+    throw new Error(result.error.message);
+  }
+
+  return result;
 }
