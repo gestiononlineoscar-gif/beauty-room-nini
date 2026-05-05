@@ -50,7 +50,7 @@ export function Sidebar({ usuario }: { usuario: Usuario }) {
         {/* Logo */}
         <div className="px-6 py-6 border-b border-[rgba(196,114,138,0.2)]">
           <Link href="/admin/agenda" className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Beauty Room Nini" width={44} height={44} className="rounded-full flex-shrink-0" />
+            <Image src="/logo-square.png" alt="Beauty Room Nini" width={44} height={44} className="rounded-full flex-shrink-0" />
             <div>
               <p className="text-[#C4728A] font-heading text-base leading-tight">beauty room</p>
               <p className="text-[#C4728A] font-heading text-base leading-tight font-bold">nini</p>
