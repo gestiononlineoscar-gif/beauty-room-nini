@@ -3,12 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase";
 import type { Usuario } from "@/types";
 import {
   CalendarDays, List, Scissors, Users, UserCircle,
-  BarChart2, Clock, Settings, LogOut, User
+  BarChart2, Clock, Settings, LogOut, User, MoreHorizontal, X
 } from "lucide-react";
 
 interface NavItem {
@@ -34,6 +35,7 @@ export function Sidebar({ usuario }: { usuario: Usuario }) {
   const pathname = usePathname();
   const router = useRouter();
   const esPropietaria = usuario.rol === "propietaria";
+  const [masAbierto, setMasAbierto] = useState(false);
 
   const items = navItems.filter((item) => !item.soloAdmin || esPropietaria);
 
@@ -109,12 +111,13 @@ export function Sidebar({ usuario }: { usuario: Usuario }) {
 
       {/* Bottom nav móvil */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#1a1412] border-t border-[rgba(196,114,138,0.2)] flex justify-around items-center py-2 z-50">
-        {items.slice(0, 5).map((item) => {
+        {items.slice(0, 4).map((item) => {
           const activo = pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setMasAbierto(false)}
               className={cn(
                 "flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors",
                 activo ? "text-[#C4728A]" : "text-[#6b6360]"
@@ -125,7 +128,48 @@ export function Sidebar({ usuario }: { usuario: Usuario }) {
             </Link>
           );
         })}
+        {items.length > 4 && (
+          <button
+            onClick={() => setMasAbierto((v) => !v)}
+            className={cn("flex flex-col items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors",
+              masAbierto ? "text-[#C4728A]" : "text-[#6b6360]")}
+          >
+            {masAbierto ? <X size={18} /> : <MoreHorizontal size={18} />}
+            <span className="text-[10px]">Más</span>
+          </button>
+        )}
       </nav>
+
+      {/* Panel "Más" móvil */}
+      {masAbierto && (
+        <div className="md:hidden fixed bottom-16 left-0 right-0 bg-[#1a1412] border-t border-[rgba(196,114,138,0.2)] z-40 px-4 py-3 grid grid-cols-4 gap-2">
+          {items.slice(4).map((item) => {
+            const activo = pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMasAbierto(false)}
+                className={cn(
+                  "flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-xs transition-colors",
+                  activo ? "text-[#C4728A] bg-[rgba(196,114,138,0.15)]" : "text-[#6b6360] hover:text-[#C4728A]"
+                )}
+              >
+                {item.icon}
+                <span className="text-[10px] text-center leading-tight">{item.label}</span>
+              </Link>
+            );
+          })}
+          <button
+            onClick={handleLogout}
+            className="flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-xs text-[#6b6360] hover:text-red-400 transition-colors"
+          >
+            <LogOut size={18} />
+            <span className="text-[10px]">Salir</span>
+          </button>
+        </div>
+      )}
+
     </>
   );
 }
