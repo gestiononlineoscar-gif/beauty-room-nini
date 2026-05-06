@@ -377,7 +377,7 @@ export default async function LandingPage() {
               {[
                 { icon: "📍", titulo: "Dirección", lineas: ["C. de la Constitución, 53", "28100 Alcobendas, Madrid"], href: "https://www.google.com/maps/search/?api=1&query=C.+de+la+Constitución,+53,+28100+Alcobendas,+Madrid" },
                 { icon: "📞", titulo: "Teléfono", lineas: ["+34 604 85 02 49"], href: "tel:+34604850249" },
-                { icon: "🕐", titulo: "Horario", lineas: ["Lunes – Sábado: 10:00 – 20:00", "Domingo: Cerrado"] },
+                { icon: "🕐", titulo: "Horario", lineas: ["Lun–Mar: 10:00–20:00", "Mié–Vie: 10:00–21:00", "Sáb: 10:00–17:00 · Dom: Cerrado"] },
                 { icon: "📷", titulo: "Instagram", lineas: ["@beautyroom.nini"], href: "https://instagram.com/beautyroom.nini" },
               ].map((item) => (
                 <div key={item.titulo} className="card-rosa flex gap-4 items-start bg-white rounded-2xl border border-[#C4728A]/12 p-5">

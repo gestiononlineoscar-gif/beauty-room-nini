@@ -76,8 +76,10 @@ export function Footer() {
               </ul>
               <div className="mt-5">
                 <p className="text-xs font-semibold text-white/80 mb-2">Horario</p>
-                <p className="text-xs">Lun – Sáb: 10:00 – 20:00</p>
-                <p className="text-xs">Domingo: Cerrado</p>
+                <p className="text-xs">Lun – Mar: 10:00 – 20:00</p>
+                <p className="text-xs">Mié – Vie: 10:00 – 21:00</p>
+                <p className="text-xs">Sáb: 10:00 – 17:00</p>
+                <p className="text-xs">Dom: Cerrado</p>
               </div>
             </div>
           </div>

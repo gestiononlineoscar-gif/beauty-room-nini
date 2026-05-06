@@ -11,7 +11,7 @@ export default function ConfirmacionPage() {
         </p>
         <div className="bg-white rounded-2xl border border-[#e8c5ce] p-6 mb-8 text-left space-y-2">
           <p className="text-sm text-[#6b6360]">📍 Alcobendas, Madrid</p>
-          <p className="text-sm text-[#6b6360]">🕐 Lun–Sáb 10:00–20:00</p>
+          <p className="text-sm text-[#6b6360]">🕐 Lun–Mar 10:00–20:00 · Mié–Vie 10:00–21:00 · Sáb 10:00–17:00</p>
           <p className="text-sm text-[#6b6360]">Para modificaciones, contáctanos directamente en el salón</p>
         </div>
         <Link
