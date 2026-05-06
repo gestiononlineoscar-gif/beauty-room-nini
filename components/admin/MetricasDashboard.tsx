@@ -11,17 +11,21 @@ import {
   startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Download } from "lucide-react";
 
 type Rango = "dia" | "semana" | "mes" | "personalizado";
 
 interface ReservaAPI {
   id: string;
   fecha: string;
+  hora_inicio: string;
   estado: string;
   profesional_id: string;
+  pagado?: boolean;
+  metodo_pago?: string | null;
   servicios?: { nombre: string; precio: number } | null;
   profesionales?: { nombre: string } | null;
+  clientes?: { nombre: string; telefono?: string | null; email?: string | null } | null;
 }
 
 interface Props {
@@ -115,6 +119,31 @@ export function MetricasDashboard({ profesionales }: Props) {
   });
   const topServicios = Object.values(serviciosMap).sort((a, b) => b.count - a.count).slice(0, 6);
 
+  function exportarCSV() {
+    const { d, h } = calcularRango();
+    const filas = activas.map((r) => [
+      r.fecha,
+      r.hora_inicio?.slice(0, 5) ?? "",
+      r.clientes?.nombre ?? "",
+      r.clientes?.telefono ?? "",
+      r.servicios?.nombre ?? "",
+      r.profesionales?.nombre ?? "",
+      r.servicios?.precio != null ? Number(r.servicios.precio).toFixed(2) : "",
+      r.estado,
+      r.pagado ? "Sí" : "No",
+      r.metodo_pago ?? "",
+    ]);
+    const cabecera = ["Fecha", "Hora", "Cliente", "Teléfono", "Servicio", "Profesional", "Precio", "Estado", "Pagado", "Método pago"];
+    const csv = [cabecera, ...filas].map((f) => f.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `beauty-room-nini_${d}_${h}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const etiquetaPeriodo = () => {
     if (rango === "dia") return format(diaRef, "EEEE d 'de' MMMM", { locale: es });
     if (rango === "semana") {
@@ -131,6 +160,7 @@ export function MetricasDashboard({ profesionales }: Props) {
 
       {/* Selector de rango */}
       <div className="bg-white rounded-2xl border border-[#e8c5ce] p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-1 bg-[#f4f1ef] p-1 rounded-xl w-fit">
           {(["dia", "semana", "mes", "personalizado"] as Rango[]).map((r) => (
             <button key={r} onClick={() => setRango(r)}
@@ -138,6 +168,14 @@ export function MetricasDashboard({ profesionales }: Props) {
               {r === "dia" ? "Día" : r === "semana" ? "Semana" : r === "mes" ? "Mes" : "Personalizado"}
             </button>
           ))}
+        </div>
+        <button
+          onClick={exportarCSV}
+          disabled={activas.length === 0}
+          className="flex items-center gap-1.5 text-xs text-[#C4728A] border border-[#e8c5ce] px-3 py-1.5 rounded-xl hover:bg-[#f7e8ed] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Download size={13} /> Exportar CSV
+        </button>
         </div>
 
         {/* Navegación día */}

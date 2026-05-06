@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase";
@@ -8,7 +8,10 @@ import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Reserva, Profesional, EstadoReserva } from "@/types";
-import { Check, X, Pencil, Clock, Euro, User, Scissors } from "lucide-react";
+import { Check, X, Pencil, Clock, Euro, User, Scissors, Banknote, CreditCard } from "lucide-react";
+
+const METODOS_PAGO = ["Efectivo", "Tarjeta", "Bizum"] as const;
+type MetodoPago = (typeof METODOS_PAGO)[number];
 
 const COLORES_ESTADO: Record<EstadoReserva, string> = {
   pendiente:   "bg-amber-100 text-amber-700 border-amber-200",
@@ -37,6 +40,12 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
   const [loading, setLoading] = useState(false);
   const [notas, setNotas] = useState(reserva.notas ?? "");
   const [editandoNotas, setEditandoNotas] = useState(false);
+  const [pagado, setPagado] = useState(reserva.pagado ?? false);
+  const [metodoPago, setMetodoPago] = useState<MetodoPago | "">(
+    (reserva.metodo_pago as MetodoPago) ?? ""
+  );
+  const [historial, setHistorial] = useState<Reserva[] | null>(null);
+  const [mostrarHistorial, setMostrarHistorial] = useState(false);
 
   const profesional = profesionales.find((p) => p.id === reserva.profesional_id);
   const fecha = format(parseISO(reserva.fecha), "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
@@ -94,6 +103,39 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
     } else {
       toast.success("Notas guardadas");
       setEditandoNotas(false);
+      onActualizada(data as Reserva);
+    }
+    setLoading(false);
+  }
+
+  async function cargarHistorial() {
+    if (historial !== null || !reserva.cliente_id) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("reservas")
+      .select("*, servicios(*), profesionales(*)")
+      .eq("cliente_id", reserva.cliente_id)
+      .neq("id", reserva.id)
+      .order("fecha", { ascending: false })
+      .order("hora_inicio", { ascending: false })
+      .limit(20);
+    setHistorial((data ?? []) as Reserva[]);
+  }
+
+  async function guardarPago(nuevoPagado: boolean, nuevoMetodo: MetodoPago | "") {
+    setLoading(true);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("reservas")
+      .update({ pagado: nuevoPagado, metodo_pago: nuevoMetodo || null })
+      .eq("id", reserva.id)
+      .select("*, clientes(*), profesionales(*), servicios(*)")
+      .single();
+    if (error) {
+      toast.error("Error al actualizar el pago");
+    } else {
+      setPagado(nuevoPagado);
+      setMetodoPago(nuevoMetodo);
       onActualizada(data as Reserva);
     }
     setLoading(false);
@@ -179,6 +221,58 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
           )}
         </div>
 
+        {/* Estado de pago */}
+        <div className="bg-white rounded-2xl border border-[#e8c5ce] p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              {pagado
+                ? <Banknote size={16} className="text-green-600" />
+                : <Euro size={16} className="text-[#C4728A]" />
+              }
+              <span className="text-sm font-medium text-[#1a1412]">Pago</span>
+            </div>
+            <button
+              onClick={() => {
+                const next = !pagado;
+                setPagado(next);
+                guardarPago(next, metodoPago);
+              }}
+              disabled={loading}
+              className={`text-xs font-semibold px-3 py-1 rounded-full transition-all ${
+                pagado
+                  ? "bg-green-100 text-green-700 border border-green-200 hover:bg-green-200"
+                  : "bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200"
+              }`}
+            >
+              {pagado ? "✓ Pagado" : "Pendiente de pago"}
+            </button>
+          </div>
+          {pagado && (
+            <div className="flex gap-2">
+              {METODOS_PAGO.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => {
+                    setMetodoPago(m);
+                    guardarPago(true, m);
+                  }}
+                  disabled={loading}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border transition-all ${
+                    metodoPago === m
+                      ? "bg-[#C4728A] text-white border-[#C4728A]"
+                      : "bg-[#fdf6f0] text-[#6b6360] border-[#e8c5ce] hover:border-[#C4728A]"
+                  }`}
+                >
+                  {m === "Efectivo" && <Banknote size={12} />}
+                  {m === "Tarjeta" && <CreditCard size={12} />}
+                  {m === "Bizum" && <span className="text-[10px] font-bold">B</span>}
+                  {m}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Notas */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -223,6 +317,48 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
             </p>
           )}
         </div>
+
+        {/* Historial cliente */}
+        {reserva.cliente_id && (
+          <div className="mb-4">
+            <button
+              onClick={() => {
+                if (!mostrarHistorial) cargarHistorial();
+                setMostrarHistorial((v) => !v);
+              }}
+              className="w-full flex items-center justify-between text-sm font-medium text-[#1a1412] bg-white border border-[#e8c5ce] rounded-2xl px-4 py-3 hover:border-[#C4728A] transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <User size={14} className="text-[#C4728A]" />
+                Historial de {reserva.clientes?.nombre?.split(" ")[0] ?? "cliente"}
+              </span>
+              <span className="text-[#6b6360] text-xs">{mostrarHistorial ? "▲" : "▼"}</span>
+            </button>
+            {mostrarHistorial && (
+              <div className="mt-2 space-y-2">
+                {historial === null ? (
+                  <p className="text-xs text-[#6b6360] text-center py-3">Cargando...</p>
+                ) : historial.length === 0 ? (
+                  <p className="text-xs text-[#6b6360] text-center py-3 italic">Sin citas anteriores</p>
+                ) : (
+                  historial.map((h) => (
+                    <div key={h.id} className="bg-white border border-[#f4f1ef] rounded-xl px-4 py-3 flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-medium text-[#1a1412]">
+                          {format(parseISO(h.fecha), "d MMM yyyy", { locale: es })} · {h.hora_inicio.slice(0,5)}
+                        </p>
+                        <p className="text-xs text-[#6b6360]">{h.servicios?.nombre ?? "—"} · {(h.profesionales as Profesional | undefined)?.nombre ?? "—"}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${COLORES_ESTADO[h.estado as EstadoReserva]}`}>
+                        {LABELS_ESTADO[h.estado as EstadoReserva]}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Recordatorio WhatsApp */}
         {reserva.clientes?.telefono && reserva.estado !== "cancelada" && (

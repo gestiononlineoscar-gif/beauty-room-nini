@@ -70,6 +70,8 @@ export interface Reserva {
   hora_fin: string;
   estado: EstadoReserva;
   notas: string | null;
+  pagado: boolean;
+  metodo_pago: string | null;
   created_at: string;
   /* joins opcionales */
   clientes?: Cliente;

@@ -91,6 +91,7 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
   const [bloqueoSeleccionado, setBloqueoSeleccionado] = useState<BloqueoHorario | null>(null);
   const [slotSeleccionado, setSlotSeleccionado] = useState<{ start: Date; end: Date; resourceId?: string | number } | null>(null);
   const [bloqueoModalOpen, setBloqueoModalOpen] = useState(false);
+  const [profFiltro, setProfFiltro] = useState<Set<string>>(new Set());
 
   const colorPorProfesional = useMemo(() => {
     const mapa: Record<string, string> = {};
@@ -136,10 +137,21 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
     cargarDatos(fecha, newView);
   }, [fecha, cargarDatos]);
 
+  const profsFiltradas = useMemo(
+    () => profFiltro.size === 0 ? profesionales : profesionales.filter((p) => profFiltro.has(p.id)),
+    [profFiltro, profesionales]
+  );
+
+  const profIdsFiltradas = useMemo(() => new Set(profsFiltradas.map((p) => p.id)), [profsFiltradas]);
+
   const events = useMemo<AgendaEvent[]>(() => [
-    ...reservas.filter((r) => r.estado !== "cancelada").map((r) => reservaToEvent(r, colorPorProfesional)),
-    ...bloqueos.map((b) => bloqueoToEvent(b, colorPorProfesional)),
-  ], [reservas, bloqueos, colorPorProfesional]);
+    ...reservas
+      .filter((r) => r.estado !== "cancelada" && (profFiltro.size === 0 || profIdsFiltradas.has(r.profesional_id ?? "")))
+      .map((r) => reservaToEvent(r, colorPorProfesional)),
+    ...bloqueos
+      .filter((b) => profFiltro.size === 0 || profIdsFiltradas.has(b.profesional_id))
+      .map((b) => bloqueoToEvent(b, colorPorProfesional)),
+  ], [reservas, bloqueos, colorPorProfesional, profFiltro, profIdsFiltradas]);
 
   const eventStyleGetter = useCallback((event: AgendaEvent) => {
     if (event.tipo === "bloqueo") {
@@ -246,16 +258,46 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-gradient-to-r from-[#1a1412] to-[#2d1820] border-b border-[rgba(196,114,138,0.2)] flex-shrink-0">
         <div className="flex flex-wrap gap-2">
-          {profesionales.map((p) => (
-            <span
-              key={p.id}
-              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
-              style={{ backgroundColor: p.color + "20", color: p.color, border: `1px solid ${p.color}40` }}
-            >
-              <span className="w-2 h-2 rounded-full inline-block flex-shrink-0" style={{ backgroundColor: p.color }} />
-              {p.nombre}
-            </span>
-          ))}
+          <button
+            onClick={() => setProfFiltro(new Set())}
+            className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 transition-all border ${
+              profFiltro.size === 0
+                ? "bg-white text-[#1a1412] border-white"
+                : "bg-white/10 text-white/60 border-white/20 hover:bg-white/20"
+            }`}
+          >
+            Todas
+          </button>
+          {profesionales.map((p) => {
+            const activa = profFiltro.size === 0 || profFiltro.has(p.id);
+            return (
+              <button
+                key={p.id}
+                onClick={() => {
+                  setProfFiltro((prev) => {
+                    const next = new Set(prev.size === 0 ? profesionales.map((x) => x.id) : prev);
+                    if (next.has(p.id)) {
+                      next.delete(p.id);
+                      if (next.size === 0 || next.size === profesionales.length) return new Set();
+                    } else {
+                      next.add(p.id);
+                      if (next.size === profesionales.length) return new Set();
+                    }
+                    return next;
+                  });
+                }}
+                className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 transition-all"
+                style={{
+                  backgroundColor: activa ? p.color + "30" : "rgba(255,255,255,0.05)",
+                  color: activa ? p.color : "rgba(255,255,255,0.35)",
+                  border: `1px solid ${activa ? p.color + "60" : "rgba(255,255,255,0.1)"}`,
+                }}
+              >
+                <span className="w-2 h-2 rounded-full inline-block flex-shrink-0" style={{ backgroundColor: activa ? p.color : "rgba(255,255,255,0.2)" }} />
+                {p.nombre}
+              </button>
+            );
+          })}
           {cargando && (
             <span className="flex items-center gap-1.5 text-xs text-white/50">
               <span className="w-3 h-3 rounded-full border border-[#C4728A] border-t-transparent animate-spin inline-block" />
@@ -264,12 +306,24 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
           )}
         </div>
 
-        <button
-          onClick={() => setBloqueoModalOpen(true)}
-          className="flex items-center gap-1.5 text-xs bg-[#1a1412] hover:bg-[#2d2220] text-white px-3 py-2 rounded-xl transition-colors flex-shrink-0"
-        >
-          🔒 Bloquear horario
-        </button>
+        <div className="flex gap-2 flex-shrink-0">
+          <button
+            onClick={() => {
+              const ahora = new Date();
+              const fin = new Date(ahora.getTime() + 30 * 60 * 1000);
+              setSlotSeleccionado({ start: ahora, end: fin });
+            }}
+            className="flex items-center gap-1.5 text-xs bg-[#C4728A] hover:bg-[#a85a72] text-white px-3 py-2 rounded-xl transition-colors"
+          >
+            ➕ Walk-in
+          </button>
+          <button
+            onClick={() => setBloqueoModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-[#1a1412] hover:bg-[#2d2220] text-white px-3 py-2 rounded-xl transition-colors"
+          >
+            🔒 Bloquear
+          </button>
+        </div>
       </div>
 
       {/* Calendario */}
@@ -299,7 +353,7 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
             messages={mensajes}
             style={{ height: "100%" }}
             {...(isDayView ? {
-              resources: profesionales,
+              resources: profsFiltradas,
               resourceIdAccessor: "id",
               resourceTitleAccessor: "nombre",
             } : {})}
