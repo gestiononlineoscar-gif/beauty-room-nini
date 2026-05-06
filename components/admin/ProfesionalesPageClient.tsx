@@ -39,7 +39,7 @@ export function ProfesionalesPageClient({ profesionales, servicios }: Props) {
           }`}
         >
           <ShieldCheck size={15} />
-          Accesos al panel
+          Roles y accesos
         </button>
       </div>
 

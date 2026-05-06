@@ -4,11 +4,20 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Profesional, Servicio } from "@/types";
-import { Plus, Pencil, Check, X } from "lucide-react";
+import { DIAS_SEMANA } from "@/types";
+import { Plus, Pencil, Check, X, Clock } from "lucide-react";
 
 interface Props {
   profesionalesIniciales: Profesional[];
   servicios: Servicio[];
+}
+
+interface HorarioProf {
+  id: string;
+  dia_semana: number;
+  trabaja: boolean;
+  hora_inicio: string;
+  hora_fin: string;
 }
 
 const PROF_VACIA: Partial<Profesional> = {
@@ -20,6 +29,10 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
   const [editando, setEditando] = useState<string | null>(null);
   const [nuevo, setNuevo] = useState(false);
   const [form, setForm] = useState<Partial<Profesional>>(PROF_VACIA);
+
+  const [modalHorarios, setModalHorarios] = useState<{ prof: Profesional; horarios: HorarioProf[] } | null>(null);
+  const [guardandoDia, setGuardandoDia] = useState<number | null>(null);
+  const [cargandoHorarios, setCargandoHorarios] = useState(false);
 
   const supabase = createClient();
 
@@ -52,6 +65,30 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
     setProfesionales((prev) => prev.map((x) => x.id === p.id ? { ...x, activo: !x.activo } : x));
   }
 
+  async function abrirHorarios(p: Profesional) {
+    setCargandoHorarios(true);
+    const res = await fetch(`/api/horario-profesional?profesional_id=${p.id}`);
+    const data = await res.json();
+    setCargandoHorarios(false);
+    setModalHorarios({ prof: p, horarios: data });
+  }
+
+  async function actualizarHorario(h: HorarioProf, campo: keyof HorarioProf, valor: boolean | string) {
+    if (!modalHorarios) return;
+    setGuardandoDia(h.dia_semana);
+    const res = await fetch("/api/horario-profesional", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: h.id, trabaja: campo === "trabaja" ? valor : h.trabaja, hora_inicio: campo === "hora_inicio" ? valor + ":00" : h.hora_inicio, hora_fin: campo === "hora_fin" ? valor + ":00" : h.hora_fin }),
+    });
+    if (!res.ok) { toast.error("Error al guardar horario"); setGuardandoDia(null); return; }
+    setModalHorarios((prev) => prev ? {
+      ...prev,
+      horarios: prev.horarios.map((x) => x.id === h.id ? { ...x, [campo]: campo === "hora_inicio" || campo === "hora_fin" ? valor + ":00" : valor } : x),
+    } : null);
+    toast.success("Horario guardado");
+    setGuardandoDia(null);
+  }
 
   return (
     <div>
@@ -65,7 +102,6 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Formulario nueva */}
         {nuevo && !editando && (
           <div className="bg-white rounded-2xl border-2 border-[#C4728A] p-4 space-y-3">
             <p className="font-semibold text-[#1a1412] text-sm">Nueva profesional</p>
@@ -112,10 +148,7 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
             <div key={p.id} className={`bg-white rounded-2xl border border-[#e8c5ce] p-4 ${!p.activo ? "opacity-50" : ""}`}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                    style={{ backgroundColor: p.color }}
-                  >
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: p.color }}>
                     {p.nombre[0]}
                   </div>
                   <div>
@@ -123,15 +156,16 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
                     <p className="text-xs text-[#6b6360]">{p.especialidad}</p>
                   </div>
                 </div>
-                <div
-                  className="w-4 h-4 rounded-full border border-white shadow flex-shrink-0"
-                  style={{ backgroundColor: p.color }}
-                />
+                <div className="w-4 h-4 rounded-full border border-white shadow flex-shrink-0" style={{ backgroundColor: p.color }} />
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { setEditando(p.id); setForm(p); setNuevo(false); }}
                   className="flex-1 text-xs border border-[#e8c5ce] py-1.5 rounded-xl text-[#6b6360] hover:text-[#C4728A] hover:border-[#C4728A] transition-colors flex items-center justify-center gap-1">
                   <Pencil size={12} /> Editar
+                </button>
+                <button onClick={() => abrirHorarios(p)} disabled={cargandoHorarios}
+                  className="flex-1 text-xs border border-[#e8c5ce] py-1.5 rounded-xl text-[#6b6360] hover:text-[#C4728A] hover:border-[#C4728A] transition-colors flex items-center justify-center gap-1">
+                  <Clock size={12} /> Horarios
                 </button>
                 <button onClick={() => toggleActivo(p)}
                   className={`text-xs px-3 py-1.5 rounded-xl border transition-colors ${p.activo ? "border-red-200 text-red-600 hover:bg-red-50" : "border-green-200 text-green-600 hover:bg-green-50"}`}>
@@ -142,6 +176,54 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
           )
         ))}
       </div>
+
+      {/* Modal horarios */}
+      {modalHorarios && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setModalHorarios(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="font-heading text-lg text-[#1a1412]">Horario de {modalHorarios.prof.nombre}</h3>
+                <p className="text-xs text-[#6b6360] mt-0.5">Los clientes solo podrán reservar en los días y horas activos</p>
+              </div>
+              <button onClick={() => setModalHorarios(null)} className="text-[#6b6360] hover:text-[#1a1412]"><X size={18} /></button>
+            </div>
+
+            <div className="space-y-3">
+              {modalHorarios.horarios.map((h) => (
+                <div key={h.dia_semana} className="flex items-center gap-3 py-2 border-b border-[#f4f1ef] last:border-0">
+                  <p className="w-12 text-sm font-medium text-[#1a1412] flex-shrink-0">{DIAS_SEMANA[h.dia_semana]?.slice(0, 3)}</p>
+                  <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                    <input type="checkbox" className="sr-only peer" checked={h.trabaja}
+                      onChange={(e) => actualizarHorario(h, "trabaja", e.target.checked)} />
+                    <div className="w-9 h-5 bg-[#e8c5ce] rounded-full peer peer-checked:bg-[#C4728A] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-4 after:h-4 after:transition-all peer-checked:after:translate-x-4" />
+                  </label>
+                  {h.trabaja ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input type="time" value={h.hora_inicio?.slice(0, 5) ?? "10:00"}
+                        onChange={(e) => actualizarHorario(h, "hora_inicio", e.target.value)}
+                        className="border border-[#e8c5ce] rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-[#C4728A] focus:outline-none flex-1" />
+                      <span className="text-[#6b6360] text-sm">–</span>
+                      <input type="time" value={h.hora_fin?.slice(0, 5) ?? "20:00"}
+                        onChange={(e) => actualizarHorario(h, "hora_fin", e.target.value)}
+                        className="border border-[#e8c5ce] rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-[#C4728A] focus:outline-none flex-1" />
+                      {guardandoDia === h.dia_semana && <span className="text-xs text-[#6b6360]">...</span>}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-[#D4621A]">No trabaja</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <button onClick={() => setModalHorarios(null)}
+              className="mt-5 w-full bg-[#C4728A] hover:bg-[#a85a72] text-white py-2.5 rounded-xl text-sm font-medium transition-colors">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
