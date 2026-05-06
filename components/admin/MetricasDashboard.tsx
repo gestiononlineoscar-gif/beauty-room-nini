@@ -66,7 +66,7 @@ export function MetricasDashboard({ profesionales }: Props) {
 
   const activas = reservas.filter((r) => r.estado !== "cancelada");
   const completadas = reservas.filter((r) => r.estado === "completada");
-  const ingresos = completadas.reduce((s, r) => s + Number(r.servicios?.precio ?? 0), 0);
+  const ingresos = activas.reduce((s, r) => s + Number(r.servicios?.precio ?? 0), 0);
 
   // Gráfica temporal
   const { d: dDesde, h: dHasta } = calcularRango();
@@ -76,7 +76,7 @@ export function MetricasDashboard({ profesionales }: Props) {
   const datosGrafica = usarSemanas
     ? eachWeekOfInterval({ start: parseISO(dDesde), end: parseISO(dHasta) }, { weekStartsOn: 1 }).map((semIni) => {
         const semFin = endOfWeek(semIni, { weekStartsOn: 1 });
-        const r = completadas.filter((x) => {
+        const r = activas.filter((x) => {
           const d = parseISO(x.fecha);
           return d >= semIni && d <= semFin;
         });
@@ -87,7 +87,7 @@ export function MetricasDashboard({ profesionales }: Props) {
         };
       })
     : diasRango.map((dia) => {
-        const r = completadas.filter((x) => x.fecha === toISO(dia));
+        const r = activas.filter((x) => x.fecha === toISO(dia));
         return {
           label: format(dia, rango === "dia" ? "HH:mm" : "d MMM", { locale: es }),
           ingresos: r.reduce((s, x) => s + Number(x.servicios?.precio ?? 0), 0),
@@ -202,8 +202,7 @@ export function MetricasDashboard({ profesionales }: Props) {
             {[
               { label: "Citas", value: activas.length, sub: `${completadas.length} completadas`, color: "#2B5BA8" },
               { label: "Canceladas", value: reservas.length - activas.length, sub: "del período", color: "#D4621A" },
-              { label: "Ingresos", value: `${ingresos.toFixed(2)} €`, sub: "de completadas", color: "#4a9b6f" },
-              { label: "Ticket medio", value: completadas.length ? `${(ingresos / completadas.length).toFixed(2)} €` : "—", sub: "por cita completada", color: "#C4728A" },
+              { label: "Ingresos estimados", value: `${ingresos.toFixed(2)} €`, sub: "citas activas", color: "#4a9b6f" },
             ].map((c) => (
               <div key={c.label} className="bg-white rounded-2xl border border-[#e8c5ce] p-4">
                 <p className="text-xs text-[#6b6360] mb-1">{c.label}</p>
