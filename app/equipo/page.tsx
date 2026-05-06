@@ -15,7 +15,7 @@ export default async function EquipoPage() {
     .eq("activo", true)
     .order("nombre");
 
-  const profesionales = ((profesionalesRaw ?? []) as Profesional[]).filter((p) => p.nombre !== "Rosa");
+  const profesionales = (profesionalesRaw ?? []) as Profesional[];
 
   return (
     <div className="min-h-screen bg-[#fdf6f0] font-sans pb-20 md:pb-0">
