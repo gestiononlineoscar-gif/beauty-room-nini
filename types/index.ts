@@ -16,6 +16,7 @@ export interface Servicio {
   categoria: string;
   duracion_min: number;
   precio: number;
+  precio_desde: boolean;
   activo: boolean;
   created_at: string;
 }
@@ -103,10 +104,13 @@ export interface SlotDisponible {
 export const CATEGORIAS_SERVICIOS = [
   "Manicura",
   "Pedicura",
-  "Depilación",
+  "Depilación Hilo",
+  "Depilación Pinza",
+  "Depilación Cera",
   "Peluquería",
   "Estética",
-  "Bienestar",
+  "Pestañas",
+  "Bienestar y Salud",
 ] as const;
 
 export type CategoriaServicio = (typeof CATEGORIAS_SERVICIOS)[number];
@@ -124,8 +128,11 @@ export const DIAS_SEMANA = [
 export const ICONOS_CATEGORIA: Record<string, string> = {
   Manicura: "💅",
   Pedicura: "🦶",
-  Depilación: "🪡",
+  "Depilación Hilo": "🧵",
+  "Depilación Pinza": "🪮",
+  "Depilación Cera": "🕯️",
   Peluquería: "✂️",
   Estética: "✨",
-  Bienestar: "🧘",
+  Pestañas: "👁️",
+  "Bienestar y Salud": "🧘",
 };

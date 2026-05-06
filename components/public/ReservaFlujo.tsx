@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase";
 import { format, parseISO, isBefore, startOfDay, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { obtenerSlotsDisponibles } from "@/lib/disponibilidad";
-import type { Servicio, Profesional, SlotDisponible } from "@/types";
+import type { Servicio, Profesional, ProfesionalServicio, SlotDisponible } from "@/types";
 import { CATEGORIAS_SERVICIOS, ICONOS_CATEGORIA } from "@/types";
 import { Check } from "lucide-react";
 
@@ -25,11 +25,12 @@ const PASOS = ["Servicio", "Profesional", "Fecha y hora", "Confirmar"];
 interface Props {
   servicios: Servicio[];
   profesionales: Profesional[];
+  profesionalServicios: ProfesionalServicio[];
   servicioIdInicial?: string;
   profesionalIdInicial?: string;
 }
 
-export function ReservaFlujo({ servicios, profesionales, servicioIdInicial, profesionalIdInicial }: Props) {
+export function ReservaFlujo({ servicios, profesionales, profesionalServicios, servicioIdInicial, profesionalIdInicial }: Props) {
   const router = useRouter();
   const servicioInicial = servicioIdInicial ? servicios.find((s) => s.id === servicioIdInicial) ?? null : null;
   const profesionalInicial = profesionalIdInicial ? profesionales.find((p) => p.id === profesionalIdInicial) ?? null : null;
@@ -67,8 +68,7 @@ export function ReservaFlujo({ servicios, profesionales, servicioIdInicial, prof
     setSlotSel(null);
     setSlots([]);
     if (cualquiera) {
-      // Usar primera profesional disponible (simplificado)
-      const profId = profesionales[0]?.id;
+      const profId = profesionalesDelServicio[0]?.id;
       if (profId) await cargarSlots(profId, fechaStr);
     } else if (profesionalSel) {
       await cargarSlots(profesionalSel.id, fechaStr);
@@ -113,7 +113,7 @@ export function ReservaFlujo({ servicios, profesionales, servicioIdInicial, prof
       clienteId = nuevo?.id;
     }
 
-    const profId = cualquiera ? profesionales[0]?.id : profesionalSel?.id;
+    const profId = cualquiera ? profesionalesDelServicio[0]?.id : profesionalSel?.id;
 
     await supabase.from("reservas").insert({
       cliente_id: clienteId,
@@ -151,6 +151,16 @@ export function ReservaFlujo({ servicios, profesionales, servicioIdInicial, prof
   const diasEnMes = new Date(mesCalendario.year, mesCalendario.month + 1, 0).getDate();
   const primerDiaSemana = new Date(mesCalendario.year, mesCalendario.month, 1).getDay();
   const hoy = startOfDay(new Date());
+
+  const profesionalesDelServicio = useMemo(() => {
+    if (!servicioSel) return profesionales;
+    const ids = new Set(
+      profesionalServicios
+        .filter((ps) => ps.servicio_id === servicioSel.id)
+        .map((ps) => ps.profesional_id)
+    );
+    return profesionales.filter((p) => ids.has(p.id));
+  }, [servicioSel, profesionales, profesionalServicios]);
 
   const serviciosFiltrados = servicios.filter((s) => {
     const porBusqueda = !busqueda || s.nombre.toLowerCase().includes(busqueda.toLowerCase());
@@ -245,7 +255,9 @@ export function ReservaFlujo({ servicios, profesionales, servicioIdInicial, prof
                   <p className="text-xs text-[#6b6360]">{s.categoria} · {s.duracion_min} min</p>
                 </div>
                 <div className="text-right flex-shrink-0 ml-3">
-                  <p className="font-bold text-[#C4728A]">{Number(s.precio).toFixed(2)} €</p>
+                  <p className="font-bold text-[#C4728A]">
+                    {s.precio_desde ? `desde ${Number(s.precio).toFixed(0)} €` : `${Number(s.precio).toFixed(2)} €`}
+                  </p>
                   <p className="text-xs text-[#C4728A]">Elegir →</p>
                 </div>
               </motion.button>
@@ -257,7 +269,13 @@ export function ReservaFlujo({ servicios, profesionales, servicioIdInicial, prof
       {/* PASO 2 — Profesional */}
       {paso === 1 && (
         <motion.div key="step-1" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={stepTransition}>
-          <h2 className="font-heading text-2xl text-[#1a1412] mb-4">Elige tu profesional</h2>
+          <h2 className="font-heading text-2xl text-[#1a1412] mb-2">Elige tu profesional</h2>
+          {servicioSel && (
+            <p className="text-xs text-[#6b6360] mb-4">
+              Para <span className="font-medium text-[#C4728A]">{servicioSel.nombre}</span>
+              {" · "}{profesionalesDelServicio.length} disponible{profesionalesDelServicio.length !== 1 ? "s" : ""}
+            </p>
+          )}
           <div className="space-y-3">
             {/* Cualquiera */}
             <motion.button
@@ -271,7 +289,7 @@ export function ReservaFlujo({ servicios, profesionales, servicioIdInicial, prof
             </motion.button>
 
             <div className="grid grid-cols-2 gap-3">
-              {profesionales.map((p) => (
+              {profesionalesDelServicio.map((p) => (
                 <motion.button
                   key={p.id}
                   whileHover={cardHover}
@@ -454,7 +472,9 @@ export function ReservaFlujo({ servicios, profesionales, servicioIdInicial, prof
               </div>
               <div className="flex justify-between border-t border-[#ffffff10] pt-2 mt-2">
                 <span className="text-[#6b6360]">Precio</span>
-                <span className="font-bold text-[#C4728A] text-lg">{Number(servicioSel.precio).toFixed(2)} €</span>
+                <span className="font-bold text-[#C4728A] text-lg">
+                  {servicioSel.precio_desde ? `desde ${Number(servicioSel.precio).toFixed(0)} €` : `${Number(servicioSel.precio).toFixed(2)} €`}
+                </span>
               </div>
             </div>
           </div>

@@ -66,7 +66,8 @@ export function MetricasDashboard({ profesionales }: Props) {
 
   const activas = reservas.filter((r) => r.estado !== "cancelada");
   const completadas = reservas.filter((r) => r.estado === "completada");
-  const ingresos = activas.reduce((s, r) => s + Number(r.servicios?.precio ?? 0), 0);
+  const activasConPrecio = activas.filter((r) => r.servicios?.precio != null);
+  const ingresos = activasConPrecio.reduce((s, r) => s + Number(r.servicios!.precio), 0);
 
   // Gráfica temporal
   const { d: dDesde, h: dHasta } = calcularRango();
@@ -202,7 +203,7 @@ export function MetricasDashboard({ profesionales }: Props) {
             {[
               { label: "Citas", value: activas.length, sub: `${completadas.length} completadas`, color: "#2B5BA8" },
               { label: "Canceladas", value: reservas.length - activas.length, sub: "del período", color: "#D4621A" },
-              { label: "Ingresos estimados", value: `${ingresos.toFixed(2)} €`, sub: "citas activas", color: "#4a9b6f" },
+              { label: "Ingresos estimados", value: `${ingresos.toFixed(2)} €`, sub: activasConPrecio.length < activas.length ? `${activasConPrecio.length} de ${activas.length} citas con precio` : "todas las citas activas", color: "#4a9b6f" },
             ].map((c) => (
               <div key={c.label} className="bg-white rounded-2xl border border-[#e8c5ce] p-4">
                 <p className="text-xs text-[#6b6360] mb-1">{c.label}</p>

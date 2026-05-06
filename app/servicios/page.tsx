@@ -30,7 +30,7 @@ export default async function ServiciosPage() {
           <p className="text-[#C4728A] text-sm font-semibold uppercase tracking-widest mb-3">Catálogo completo</p>
           <h1 className="font-heading text-5xl md:text-6xl text-white mb-4">Nuestros servicios</h1>
           <p className="text-white/60 text-lg max-w-xl">
-            Más de 100 tratamientos de belleza y bienestar. Encuentra el tuyo y reserva online en segundos.
+            Más de 80 tratamientos de belleza y bienestar. Encuentra el tuyo y reserva online en segundos.
           </p>
         </div>
       </section>
@@ -42,7 +42,7 @@ export default async function ServiciosPage() {
             {categorias.map((cat) => (
               <a
                 key={cat}
-                href={`#${cat.toLowerCase()}`}
+                href={`#${cat.toLowerCase().replace(/\s+/g, "-")}`}
                 className="flex-shrink-0 flex items-center gap-1.5 text-sm text-[#6b6360] hover:text-[#C4728A] hover:bg-[#fdf6f0] px-4 py-2 rounded-xl transition-all"
               >
                 <span>{ICONOS_CATEGORIA[cat]}</span>
@@ -60,7 +60,7 @@ export default async function ServiciosPage() {
           const hasta = Math.max(...items.map((s) => Number(s.precio)));
 
           return (
-            <section key={cat} id={cat.toLowerCase()}>
+            <section key={cat} id={cat.toLowerCase().replace(/\s+/g, "-")}>
               {/* Cabecera categoría */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-4">
@@ -99,7 +99,9 @@ export default async function ServiciosPage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="font-bold text-[#C4728A] text-xl">{Number(s.precio).toFixed(2)} €</p>
+                      <p className="font-bold text-[#C4728A] text-xl">
+                        {s.precio_desde ? `desde ${Number(s.precio).toFixed(0)} €` : `${Number(s.precio).toFixed(2)} €`}
+                      </p>
                       <Link
                         href={`/reservar?servicio=${s.id}`}
                         className="text-xs bg-[#fdf6f0] hover:bg-[#C4728A] hover:text-white text-[#C4728A] font-medium px-4 py-2 rounded-xl transition-all border border-[#e8c5ce] hover:border-[#C4728A]"

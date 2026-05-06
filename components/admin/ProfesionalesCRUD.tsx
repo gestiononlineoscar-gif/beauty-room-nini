@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Profesional, Servicio } from "@/types";
 import { DIAS_SEMANA } from "@/types";
-import { Plus, Pencil, Check, X, Clock } from "lucide-react";
+import { Plus, Pencil, Check, X, Clock, Scissors } from "lucide-react";
+import { CATEGORIAS_SERVICIOS } from "@/types";
 
 interface Props {
   profesionalesIniciales: Profesional[];
@@ -33,6 +34,9 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
   const [modalHorarios, setModalHorarios] = useState<{ prof: Profesional; horarios: HorarioProf[] } | null>(null);
   const [guardandoDia, setGuardandoDia] = useState<number | null>(null);
   const [cargandoHorarios, setCargandoHorarios] = useState(false);
+
+  const [modalServicios, setModalServicios] = useState<{ prof: Profesional; seleccionados: Set<string> } | null>(null);
+  const [guardandoServicios, setGuardandoServicios] = useState(false);
 
   const supabase = createClient();
 
@@ -63,6 +67,36 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
     const { error } = await supabase.from("profesionales").update({ activo: !p.activo }).eq("id", p.id);
     if (error) { toast.error("Error"); return; }
     setProfesionales((prev) => prev.map((x) => x.id === p.id ? { ...x, activo: !x.activo } : x));
+  }
+
+  async function abrirServicios(p: Profesional) {
+    const res = await fetch(`/api/profesional-servicios?profesional_id=${p.id}`);
+    const ids: string[] = await res.json();
+    setModalServicios({ prof: p, seleccionados: new Set(ids) });
+  }
+
+  function toggleServicio(id: string) {
+    if (!modalServicios) return;
+    const next = new Set(modalServicios.seleccionados);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setModalServicios({ ...modalServicios, seleccionados: next });
+  }
+
+  async function guardarServicios() {
+    if (!modalServicios) return;
+    setGuardandoServicios(true);
+    const res = await fetch("/api/profesional-servicios", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profesional_id: modalServicios.prof.id,
+        servicio_ids: Array.from(modalServicios.seleccionados),
+      }),
+    });
+    setGuardandoServicios(false);
+    if (!res.ok) { toast.error("Error al guardar"); return; }
+    toast.success("Servicios guardados");
+    setModalServicios(null);
   }
 
   async function abrirHorarios(p: Profesional) {
@@ -158,7 +192,7 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
                 </div>
                 <div className="w-4 h-4 rounded-full border border-white shadow flex-shrink-0" style={{ backgroundColor: p.color }} />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button onClick={() => { setEditando(p.id); setForm(p); setNuevo(false); }}
                   className="flex-1 text-xs border border-[#e8c5ce] py-1.5 rounded-xl text-[#6b6360] hover:text-[#C4728A] hover:border-[#C4728A] transition-colors flex items-center justify-center gap-1">
                   <Pencil size={12} /> Editar
@@ -167,8 +201,12 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
                   className="flex-1 text-xs border border-[#e8c5ce] py-1.5 rounded-xl text-[#6b6360] hover:text-[#C4728A] hover:border-[#C4728A] transition-colors flex items-center justify-center gap-1">
                   <Clock size={12} /> Horarios
                 </button>
+                <button onClick={() => abrirServicios(p)}
+                  className="flex-1 text-xs border border-[#e8c5ce] py-1.5 rounded-xl text-[#6b6360] hover:text-[#C4728A] hover:border-[#C4728A] transition-colors flex items-center justify-center gap-1">
+                  <Scissors size={12} /> Servicios
+                </button>
                 <button onClick={() => toggleActivo(p)}
-                  className={`text-xs px-3 py-1.5 rounded-xl border transition-colors ${p.activo ? "border-red-200 text-red-600 hover:bg-red-50" : "border-green-200 text-green-600 hover:bg-green-50"}`}>
+                  className={`w-full text-xs px-3 py-1.5 rounded-xl border transition-colors ${p.activo ? "border-red-200 text-red-600 hover:bg-red-50" : "border-green-200 text-green-600 hover:bg-green-50"}`}>
                   {p.activo ? "Desactivar" : "Activar"}
                 </button>
               </div>
@@ -176,6 +214,75 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
           )
         ))}
       </div>
+
+      {/* Modal servicios */}
+      {modalServicios && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setModalServicios(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+              <div>
+                <h3 className="font-heading text-lg text-[#1a1412]">Servicios de {modalServicios.prof.nombre}</h3>
+                <p className="text-xs text-[#6b6360] mt-0.5">{modalServicios.seleccionados.size} servicio{modalServicios.seleccionados.size !== 1 ? "s" : ""} asignado{modalServicios.seleccionados.size !== 1 ? "s" : ""}</p>
+              </div>
+              <button onClick={() => setModalServicios(null)} className="text-[#6b6360] hover:text-[#1a1412]"><X size={18} /></button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 space-y-4 pr-1">
+              {CATEGORIAS_SERVICIOS.filter((cat) => servicios.some((s) => s.categoria === cat)).map((cat) => {
+                const items = servicios.filter((s) => s.categoria === cat);
+                const todosSeleccionados = items.every((s) => modalServicios.seleccionados.has(s.id));
+                return (
+                  <div key={cat}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-xs font-semibold text-[#1a1412] uppercase tracking-wide">{cat}</p>
+                      <button
+                        onClick={() => {
+                          const next = new Set(modalServicios.seleccionados);
+                          if (todosSeleccionados) {
+                            items.forEach((s) => next.delete(s.id));
+                          } else {
+                            items.forEach((s) => next.add(s.id));
+                          }
+                          setModalServicios({ ...modalServicios, seleccionados: next });
+                        }}
+                        className="text-xs text-[#C4728A] hover:underline"
+                      >
+                        {todosSeleccionados ? "Quitar todos" : "Seleccionar todos"}
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      {items.map((s) => (
+                        <label key={s.id} className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#fdf6f0] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={modalServicios.seleccionados.has(s.id)}
+                            onChange={() => toggleServicio(s.id)}
+                            className="w-4 h-4 accent-[#C4728A] cursor-pointer flex-shrink-0"
+                          />
+                          <span className="text-sm text-[#1a1412] flex-1">{s.nombre}</span>
+                          <span className="text-xs text-[#6b6360] flex-shrink-0">{s.duracion_min} min</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-3 mt-5 flex-shrink-0">
+              <button onClick={() => setModalServicios(null)}
+                className="flex-1 border border-[#e8c5ce] text-[#6b6360] py-2.5 rounded-xl text-sm hover:bg-[#f4f1ef] transition-colors">
+                Cancelar
+              </button>
+              <button onClick={guardarServicios} disabled={guardandoServicios}
+                className="flex-1 bg-[#C4728A] hover:bg-[#a85a72] disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                <Check size={15} /> {guardandoServicios ? "Guardando…" : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal horarios */}
       {modalHorarios && (

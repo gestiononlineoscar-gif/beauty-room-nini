@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { ReservaFlujo } from "@/components/public/ReservaFlujo";
-import type { Servicio, Profesional } from "@/types";
+import type { Servicio, Profesional, ProfesionalServicio } from "@/types";
 
 interface Props {
   searchParams: Promise<{ servicio?: string; profesional?: string }>;
@@ -11,12 +11,11 @@ export default async function ReservarPage({ searchParams }: Props) {
   const supabase = await createServerSupabaseClient();
   const params = await searchParams;
 
-  const [{ data: servicios }, { data: profesionalesRaw }] = await Promise.all([
+  const [{ data: servicios }, { data: profesionales }, { data: profesionalServicios }] = await Promise.all([
     supabase.from("servicios").select("*").eq("activo", true).order("categoria"),
     supabase.from("profesionales").select("*").eq("activo", true).order("nombre"),
+    supabase.from("profesional_servicio").select("profesional_id, servicio_id"),
   ]);
-
-  const profesionales = ((profesionalesRaw ?? []) as Profesional[]).filter((p) => p.nombre !== "Rosa");
 
   return (
     <div className="min-h-screen bg-[#fdf6f0] pb-20 md:pb-0">
@@ -29,6 +28,7 @@ export default async function ReservarPage({ searchParams }: Props) {
       <ReservaFlujo
         servicios={(servicios ?? []) as Servicio[]}
         profesionales={(profesionales ?? []) as Profesional[]}
+        profesionalServicios={(profesionalServicios ?? []) as ProfesionalServicio[]}
         servicioIdInicial={params.servicio}
         profesionalIdInicial={params.profesional}
       />
