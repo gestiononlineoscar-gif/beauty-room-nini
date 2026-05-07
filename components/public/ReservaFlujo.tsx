@@ -63,6 +63,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
   const [enviando, setEnviando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState<string | null>(null);
+  const [cualquieraProfMap, setCualquieraProfMap] = useState<Record<string, string>>({});
 
   const [mesCalendario, setMesCalendario] = useState(() => {
     const hoy = new Date();
@@ -116,9 +117,36 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     setFecha(fechaStr);
     setSlotSel(null);
     setSlots([]);
+    if (!servicioSel) return;
+    const dur = varianteSel?.duracion_min ?? servicioSel.duracion_min;
+
     if (cualquiera) {
-      const profId = profesionalesDelServicio[0]?.id;
-      if (profId) await cargarSlots(profId, fechaStr);
+      setCargandoSlots(true);
+      try {
+        const resultados = await Promise.all(
+          profesionalesDelServicio.map(async (prof) => {
+            const res = await fetch(`/api/slots?profesional_id=${prof.id}&fecha=${fechaStr}&duracion_min=${dur}`);
+            const data: SlotDisponible[] = await res.json();
+            return { profId: prof.id, slots: Array.isArray(data) ? data : [] };
+          })
+        );
+        const slotMap: Record<string, SlotDisponible> = {};
+        const profMap: Record<string, string> = {};
+        for (const { profId, slots } of resultados) {
+          for (const slot of slots) {
+            const existing = slotMap[slot.hora_inicio];
+            if (!existing || (!existing.disponible && slot.disponible)) {
+              slotMap[slot.hora_inicio] = slot;
+              if (slot.disponible) profMap[slot.hora_inicio] = profId;
+            }
+          }
+        }
+        setCualquieraProfMap(profMap);
+        setSlots(Object.values(slotMap).sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio)));
+      } catch {
+        setSlots([]);
+      }
+      setCargandoSlots(false);
     } else if (profesionalSel) {
       await cargarSlots(profesionalSel.id, fechaStr);
     }
@@ -127,6 +155,26 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
   async function confirmarReserva() {
     if (!slotSel || !servicioSel || !nombre) return;
     setEnviando(true);
+
+    // Re-verificar que el slot sigue disponible (previene doble reserva)
+    const profIdVerif = cualquiera ? cualquieraProfMap[slotSel.hora_inicio] : profesionalSel?.id;
+    if (profIdVerif) {
+      try {
+        const dur = varianteSel?.duracion_min ?? servicioSel.duracion_min;
+        const res = await fetch(`/api/slots?profesional_id=${profIdVerif}&fecha=${fecha}&duracion_min=${dur}`);
+        const slotsActuales: SlotDisponible[] = await res.json();
+        const slotActual = slotsActuales.find((s) => s.hora_inicio === slotSel.hora_inicio);
+        if (!slotActual?.disponible) {
+          setEnviando(false);
+          alert("Lo sentimos, ese horario ya no está disponible. Por favor elige otro.");
+          setSlotSel(null);
+          setSlots([]);
+          setPaso(3);
+          return;
+        }
+      } catch { /* si falla la verificación, continuamos */ }
+    }
+
     const supabase = createClient();
 
     let clienteId: string;
@@ -159,7 +207,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       clienteId = nuevo?.id;
     }
 
-    const profId = cualquiera ? profesionalesDelServicio[0]?.id : profesionalSel?.id;
+    const profId = cualquiera ? (cualquieraProfMap[slotSel.hora_inicio] ?? profesionalesDelServicio[0]?.id) : profesionalSel?.id;
     const duracion = varianteSel?.duracion_min ?? servicioSel.duracion_min;
     const precio = Number(varianteSel?.precio ?? servicioSel.precio);
 
@@ -420,7 +468,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
               ))}
             </div>
           </div>
-          <button onClick={() => setPaso(tieneVariantes ? 1 : 0)} className="mt-4 text-sm text-[#6b6360] hover:text-[#C4728A]">
+          <button onClick={() => { setPaso(tieneVariantes ? 1 : 0); setSlotSel(null); setSlots([]); setFecha(""); setCualquieraProfMap({}); }} className="mt-4 text-sm text-[#6b6360] hover:text-[#C4728A]">
             ← Volver
           </button>
         </motion.div>
@@ -528,7 +576,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
           )}
 
           <div className="flex gap-3 mt-6">
-            <button onClick={() => setPaso(2)} className="flex-1 border border-[#e8c5ce] text-[#6b6360] py-2.5 rounded-xl text-sm hover:bg-[#f4f1ef] transition-colors">
+            <button onClick={() => { setPaso(2); setSlotSel(null); setSlots([]); setFecha(""); }} className="flex-1 border border-[#e8c5ce] text-[#6b6360] py-2.5 rounded-xl text-sm hover:bg-[#f4f1ef] transition-colors">
               ← Volver
             </button>
             <motion.button

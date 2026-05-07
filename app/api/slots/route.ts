@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const profesionalId = searchParams.get("profesional_id");
   const fecha = searchParams.get("fecha");
-  const duracionMin = Number(searchParams.get("duracion_min") ?? "60");
+  const duracionMin = Number(searchParams.get("duracion_min") ?? "60") || 60;
 
   if (!profesionalId || !fecha) {
     return NextResponse.json({ error: "Faltan parámetros" }, { status: 400 });
