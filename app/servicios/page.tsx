@@ -6,6 +6,12 @@ import { Navbar } from "@/components/public/Navbar";
 
 export const revalidate = 3600;
 import { Footer } from "@/components/public/Footer";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Servicios — Beauty Room Nini | Alcobendas, Madrid",
+  description: "Manicura, pedicura, peluquería, depilación, pestañas y estética en Alcobendas. Precios y servicios del salón de belleza Beauty Room Nini.",
+};
 
 export default async function ServiciosPage() {
   const supabase = await createServerSupabaseClient();

@@ -3,6 +3,13 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { ReservaFlujo } from "@/components/public/ReservaFlujo";
 import type { Servicio, Profesional, ProfesionalServicio } from "@/types";
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Reservar Cita — Beauty Room Nini | Alcobendas, Madrid",
+  description: "Reserva tu cita online en Beauty Room Nini, Alcobendas. Elige servicio, profesional y horario en segundos. Manicura, peluquería, depilación y más.",
+};
+
 interface Props {
   searchParams: Promise<{ servicio?: string; profesional?: string }>;
 }

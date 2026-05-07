@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Beauty Room Nini — Salón de Belleza en Alcobendas, Madrid",
+  description: "Salón de belleza en Alcobendas, Madrid. Manicura, pedicura, peluquería, depilación, pestañas y estética. Reserva tu cita online fácil y rápido.",
+};
+
 import Link from "next/link";
 import Image from "next/image";
 import { createServerSupabaseClient } from "@/lib/supabase-server";

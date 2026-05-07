@@ -6,6 +6,12 @@ import { Navbar } from "@/components/public/Navbar";
 
 export const revalidate = 3600;
 import { Footer } from "@/components/public/Footer";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Nuestro Equipo — Beauty Room Nini | Alcobendas, Madrid",
+  description: "Conoce a las profesionales de Beauty Room Nini en Alcobendas. Especialistas en manicura, peluquería, depilación y estética. Reserva con tu profesional favorita.",
+};
 
 export default async function EquipoPage() {
   const supabase = await createServerSupabaseClient();
