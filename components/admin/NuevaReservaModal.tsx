@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
-import { obtenerSlotsDisponibles } from "@/lib/disponibilidad";
 import type { Profesional, Servicio, Reserva, SlotDisponible, ServicioVariante } from "@/types";
 
 interface Props {
@@ -66,7 +65,10 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
     if (!profesionalId || !servicioId || !fecha || !duracion) return;
     // Only calculate slots when variant is selected (if service has variants)
     if (servicioSeleccionado?.precio_desde && variantes.length > 0 && !varianteId) return;
-    obtenerSlotsDisponibles(profesionalId, fecha, duracion).then(setSlots);
+    fetch(`/api/slots?profesional_id=${profesionalId}&fecha=${fecha}&duracion_min=${duracion}`)
+      .then((r) => r.json())
+      .then((data) => setSlots(Array.isArray(data) ? data : []))
+      .catch(() => setSlots([]));
   }, [profesionalId, servicioId, varianteId, fecha, duracion, variantes.length, servicioSeleccionado?.precio_desde]);
 
   async function handleCrear(e: React.FormEvent) {
