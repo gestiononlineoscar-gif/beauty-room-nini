@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Profesional, Servicio } from "@/types";
 import { DIAS_SEMANA } from "@/types";
-import { Plus, Pencil, Check, X, Clock, Scissors } from "lucide-react";
+import { Plus, Pencil, Check, X, Clock, Scissors, Eye, EyeOff } from "lucide-react";
 import { CATEGORIAS_SERVICIOS } from "@/types";
 
 interface Props {
@@ -67,6 +67,13 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
     const { error } = await supabase.from("profesionales").update({ activo: !p.activo }).eq("id", p.id);
     if (error) { toast.error("Error"); return; }
     setProfesionales((prev) => prev.map((x) => x.id === p.id ? { ...x, activo: !x.activo } : x));
+  }
+
+  async function toggleVisiblePublico(p: Profesional) {
+    const { error } = await supabase.from("profesionales").update({ visible_publico: !p.visible_publico }).eq("id", p.id);
+    if (error) { toast.error("Error"); return; }
+    setProfesionales((prev) => prev.map((x) => x.id === p.id ? { ...x, visible_publico: !x.visible_publico } : x));
+    toast.success(p.visible_publico ? "Oculta en la web pública" : "Visible en la web pública");
   }
 
   async function abrirServicios(p: Profesional) {
@@ -206,8 +213,13 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
                   <Scissors size={12} /> Servicios
                 </button>
                 <button onClick={() => toggleActivo(p)}
-                  className={`w-full text-xs px-3 py-1.5 rounded-xl border transition-colors ${p.activo ? "border-red-200 text-red-600 hover:bg-red-50" : "border-green-200 text-green-600 hover:bg-green-50"}`}>
+                  className={`flex-1 text-xs px-3 py-1.5 rounded-xl border transition-colors ${p.activo ? "border-red-200 text-red-600 hover:bg-red-50" : "border-green-200 text-green-600 hover:bg-green-50"}`}>
                   {p.activo ? "Desactivar" : "Activar"}
+                </button>
+                <button onClick={() => toggleVisiblePublico(p)}
+                  title={p.visible_publico ? "Ocultar de la web pública" : "Mostrar en la web pública"}
+                  className={`flex-1 text-xs px-3 py-1.5 rounded-xl border transition-colors flex items-center justify-center gap-1 ${p.visible_publico ? "border-[#e8c5ce] text-[#6b6360] hover:border-[#C4728A] hover:text-[#C4728A]" : "border-amber-200 text-amber-600 hover:bg-amber-50"}`}>
+                  {p.visible_publico ? <><Eye size={12} /> En web</> : <><EyeOff size={12} /> Oculta</>}
                 </button>
               </div>
             </div>

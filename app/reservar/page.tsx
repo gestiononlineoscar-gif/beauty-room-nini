@@ -13,7 +13,7 @@ export default async function ReservarPage({ searchParams }: Props) {
 
   const [{ data: servicios }, { data: profesionales }, { data: profesionalServicios }] = await Promise.all([
     supabase.from("servicios").select("*").eq("activo", true).order("categoria"),
-    supabase.from("profesionales").select("*").eq("activo", true).order("nombre"),
+    supabase.from("profesionales").select("*").eq("activo", true).eq("visible_publico", true).order("nombre"),
     supabase.from("profesional_servicio").select("profesional_id, servicio_id"),
   ]);
 

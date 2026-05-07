@@ -6,6 +6,7 @@ export interface Profesional {
   especialidad: string | null;
   color: string;
   activo: boolean;
+  visible_publico: boolean;
   foto_url: string | null;
   created_at: string;
 }

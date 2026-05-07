@@ -13,6 +13,7 @@ export default async function EquipoPage() {
     .from("profesionales")
     .select("*")
     .eq("activo", true)
+    .eq("visible_publico", true)
     .order("nombre");
 
   const profesionales = (profesionalesRaw ?? []) as Profesional[];
