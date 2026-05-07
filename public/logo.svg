@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <!-- White base -->
+  <rect width="500" height="500" fill="white"/>
+
+  <!-- Pink watercolor circle background -->
+  <circle cx="250" cy="250" r="230" fill="#f2c4ce" opacity="0.55"/>
+  <circle cx="250" cy="250" r="210" fill="#edb4c0" opacity="0.45"/>
+  <circle cx="250" cy="250" r="195" fill="#e8a8b8" opacity="0.35"/>
+
+  <!-- Gold border ring -->
+  <circle cx="250" cy="250" r="232" fill="none" stroke="#c9a55a" stroke-width="10"/>
+  <circle cx="250" cy="250" r="220" fill="none" stroke="#e8c97a" stroke-width="4"/>
+
+  <!-- NINI text top -->
+  <text x="250" y="120" font-family="Georgia, serif" font-size="52" font-weight="bold" fill="#8b4a62" text-anchor="middle" letter-spacing="10">NINI</text>
+
+  <!-- Face line art -->
+  <!-- Head/face outline -->
+  <ellipse cx="250" cy="230" rx="60" ry="75" fill="none" stroke="#9b5a70" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Hair top -->
+  <path d="M195 210 Q200 160 250 155 Q300 160 305 210" fill="none" stroke="#9b5a70" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Left eye -->
+  <path d="M220 205 Q228 198 236 205" fill="none" stroke="#9b5a70" stroke-width="2" stroke-linecap="round"/>
+  <!-- Right eye -->
+  <path d="M264 205 Q272 198 280 205" fill="none" stroke="#9b5a70" stroke-width="2" stroke-linecap="round"/>
+  <!-- Nose -->
+  <path d="M250 215 Q245 230 250 235 Q255 230 250 215" fill="none" stroke="#9b5a70" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- Mouth -->
+  <path d="M235 252 Q250 262 265 252" fill="none" stroke="#9b5a70" stroke-width="2" stroke-linecap="round"/>
+  <!-- Left hand/arm with flower -->
+  <path d="M195 270 Q175 285 170 310 Q168 325 178 320" fill="none" stroke="#9b5a70" stroke-width="2" stroke-linecap="round"/>
+  <!-- Rose stem -->
+  <path d="M170 310 Q165 330 168 345" fill="none" stroke="#9b5a70" stroke-width="2" stroke-linecap="round"/>
+  <!-- Rose petals -->
+  <circle cx="165" cy="348" r="8" fill="none" stroke="#9b5a70" stroke-width="1.8"/>
+  <path d="M158 342 Q165 335 172 342" fill="none" stroke="#9b5a70" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M160 350 Q165 357 172 350" fill="none" stroke="#9b5a70" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Right hand -->
+  <path d="M305 270 Q325 290 320 315" fill="none" stroke="#9b5a70" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- BEAUTY ROOM text bottom -->
+  <text x="250" y="400" font-family="Georgia, serif" font-size="32" fill="#8b4a62" text-anchor="middle" letter-spacing="5">BEAUTY ROOM</text>
+
+  <!-- Decorative dots -->
+  <circle cx="150" cy="250" r="5" fill="#c9a55a" opacity="0.6"/>
+  <circle cx="350" cy="250" r="5" fill="#c9a55a" opacity="0.6"/>
+</svg>
