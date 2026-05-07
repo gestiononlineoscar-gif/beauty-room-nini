@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import { obtenerSlotsDisponibles } from "@/lib/disponibilidad";
-import type { Profesional, Servicio, Reserva, SlotDisponible } from "@/types";
+import type { Profesional, Servicio, Reserva, SlotDisponible, ServicioVariante } from "@/types";
 
 interface Props {
   open: boolean;
@@ -22,6 +22,7 @@ interface Props {
 
 export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, profesionalPreseleccionada, onCreada }: Props) {
   const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [variantes, setVariantes] = useState<ServicioVariante[]>([]);
   const [slots, setSlots] = useState<SlotDisponible[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -29,6 +30,7 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
   const [clienteTelefono, setClienteTelefono] = useState("");
   const [clienteEmail, setClienteEmail] = useState("");
   const [servicioId, setServicioId] = useState("");
+  const [varianteId, setVarianteId] = useState("");
   const [profesionalId, setProfesionalId] = useState(profesionalPreseleccionada?.id ?? "");
   const [fecha, setFecha] = useState(format(fechaInicial, "yyyy-MM-dd"));
   const [slotSeleccionado, setSlotSeleccionado] = useState<SlotDisponible | null>(null);
@@ -40,12 +42,32 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
     });
   }, []);
 
+  // Fetch variants when service changes
   useEffect(() => {
-    if (!profesionalId || !servicioId || !fecha) { setSlots([]); return; }
+    setVariantes([]);
+    setVarianteId("");
+    setSlotSeleccionado(null);
+    if (!servicioId) return;
     const servicio = servicios.find((s) => s.id === servicioId);
-    if (!servicio) return;
-    obtenerSlotsDisponibles(profesionalId, fecha, servicio.duracion_min).then(setSlots);
-  }, [profesionalId, servicioId, fecha, servicios]);
+    if (!servicio?.precio_desde) return;
+    fetch(`/api/servicio-variantes?servicio_id=${servicioId}`)
+      .then((r) => r.json())
+      .then((data) => setVariantes(Array.isArray(data) ? data : []));
+  }, [servicioId, servicios]);
+
+  // Compute duration based on variant or service
+  const servicioSeleccionado = servicios.find((s) => s.id === servicioId);
+  const varianteSeleccionada = variantes.find((v) => v.id === varianteId);
+  const duracion = varianteSeleccionada?.duracion_min ?? servicioSeleccionado?.duracion_min;
+
+  useEffect(() => {
+    setSlots([]);
+    setSlotSeleccionado(null);
+    if (!profesionalId || !servicioId || !fecha || !duracion) return;
+    // Only calculate slots when variant is selected (if service has variants)
+    if (servicioSeleccionado?.precio_desde && variantes.length > 0 && !varianteId) return;
+    obtenerSlotsDisponibles(profesionalId, fecha, duracion).then(setSlots);
+  }, [profesionalId, servicioId, varianteId, fecha, duracion, variantes.length, servicioSeleccionado?.precio_desde]);
 
   async function handleCrear(e: React.FormEvent) {
     e.preventDefault();
@@ -53,11 +75,14 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
       toast.error("Completa todos los campos");
       return;
     }
+    if (servicioSeleccionado?.precio_desde && variantes.length > 0 && !varianteId) {
+      toast.error("Selecciona el tamaño del servicio");
+      return;
+    }
 
     setLoading(true);
     const supabase = createClient();
 
-    // Buscar o crear cliente
     let clienteId: string;
     const { data: clienteExistente } = await supabase
       .from("clientes")
@@ -83,12 +108,13 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
         cliente_id: clienteId,
         profesional_id: profesionalId,
         servicio_id: servicioId,
+        variante_id: varianteId || null,
         fecha,
         hora_inicio: slotSeleccionado.hora_inicio + ":00",
         hora_fin: slotSeleccionado.hora_fin + ":00",
         estado: "confirmada",
       })
-      .select("*, clientes(*), profesionales(*), servicios(*)")
+      .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
       .single();
 
     if (error) {
@@ -100,7 +126,13 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
     setLoading(false);
   }
 
-  const servicioSeleccionado = servicios.find((s) => s.id === servicioId);
+  const precioDisplay = varianteSeleccionada
+    ? `${Number(varianteSeleccionada.precio).toFixed(2)} €`
+    : servicioSeleccionado?.precio_desde
+      ? `desde ${Number(servicioSeleccionado.precio).toFixed(0)} €`
+      : servicioSeleccionado
+        ? `${Number(servicioSeleccionado.precio).toFixed(2)} €`
+        : "";
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -147,13 +179,33 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
                 <optgroup key={cat} label={cat}>
                   {servicios.filter((s) => s.categoria === cat).map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.nombre} — {s.duracion_min}min — {Number(s.precio).toFixed(2)}€
+                      {s.nombre}{s.precio_desde ? ` — desde ${Number(s.precio).toFixed(0)}€` : ` — ${Number(s.precio).toFixed(2)}€`}
                     </option>
                   ))}
                 </optgroup>
               ))}
             </select>
           </div>
+
+          {/* Variante (solo si el servicio tiene precio_desde y variantes) */}
+          {servicioSeleccionado?.precio_desde && variantes.length > 0 && (
+            <div>
+              <Label className="text-xs text-[#6b6360]">Tamaño *</Label>
+              <select
+                value={varianteId}
+                onChange={(e) => { setVarianteId(e.target.value); setSlotSeleccionado(null); }}
+                required
+                className="mt-1 w-full border border-[#e8c5ce] rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C4728A]"
+              >
+                <option value="">Selecciona el tamaño...</option>
+                {variantes.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.nombre} — {v.duracion_min}min — {Number(v.precio).toFixed(2)}€
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Profesional */}
           <div>
@@ -213,9 +265,9 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
           {slotSeleccionado && servicioSeleccionado && (
             <div className="bg-[#1a1412] rounded-xl p-4 text-white text-sm">
               <p className="font-medium mb-2 text-[#C4728A]">Resumen</p>
-              <p>{servicioSeleccionado.nombre}</p>
+              <p>{servicioSeleccionado.nombre}{varianteSeleccionada ? ` — ${varianteSeleccionada.nombre}` : ""}</p>
               <p className="text-[#f7e8ed]">{format(new Date(fecha + "T12:00:00"), "dd/MM/yyyy")} a las {slotSeleccionado.hora_inicio}</p>
-              <p className="text-[#C4728A] font-semibold mt-1">{Number(servicioSeleccionado.precio).toFixed(2)} €</p>
+              <p className="text-[#C4728A] font-semibold mt-1">{precioDisplay}</p>
             </div>
           )}
 

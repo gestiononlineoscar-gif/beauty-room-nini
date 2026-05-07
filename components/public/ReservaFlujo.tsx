@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase";
 import { format, parseISO, isBefore, startOfDay, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { obtenerSlotsDisponibles } from "@/lib/disponibilidad";
-import type { Servicio, Profesional, ProfesionalServicio, SlotDisponible } from "@/types";
+import type { Servicio, Profesional, ProfesionalServicio, SlotDisponible, ServicioVariante } from "@/types";
 import { CATEGORIAS_SERVICIOS, ICONOS_CATEGORIA } from "@/types";
 import { Check } from "lucide-react";
 
@@ -20,7 +20,13 @@ const stepVariants = {
 const cardHover = { scale: 1.02 } as const;
 const cardTap   = { scale: 0.98 } as const;
 
-const PASOS = ["Servicio", "Profesional", "Fecha y hora", "Confirmar"];
+// Internal paso numbering:
+//   0 = Servicio
+//   1 = Tamaño/Variante  (only for precio_desde services with variants)
+//   2 = Profesional
+//   3 = Fecha y hora
+//   4 = Confirmar
+// When no variants: paso 1 is skipped (service click goes directly to paso 2)
 
 interface Props {
   servicios: Servicio[];
@@ -34,9 +40,18 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
   const router = useRouter();
   const servicioInicial = servicioIdInicial ? servicios.find((s) => s.id === servicioIdInicial) ?? null : null;
   const profesionalInicial = profesionalIdInicial ? profesionales.find((p) => p.id === profesionalIdInicial) ?? null : null;
-  const pasoinicial = servicioInicial && profesionalInicial ? 2 : servicioInicial ? 1 : 0;
+
+  const pasoinicial = servicioInicial && profesionalInicial
+    ? 3
+    : servicioInicial
+      ? (servicioInicial.precio_desde ? 1 : 2)
+      : 0;
+
   const [paso, setPaso] = useState(pasoinicial);
   const [servicioSel, setServicioSel] = useState<Servicio | null>(servicioInicial);
+  const [variantes, setVariantes] = useState<ServicioVariante[]>([]);
+  const [varianteSel, setVarianteSel] = useState<ServicioVariante | null>(null);
+  const [cargandoVariantes, setCargandoVariantes] = useState(false);
   const [profesionalSel, setProfesionalSel] = useState<Profesional | null>(profesionalInicial);
   const [cualquiera, setCualquiera] = useState(false);
   const [fecha, setFecha] = useState("");
@@ -55,10 +70,40 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     return { year: hoy.getFullYear(), month: hoy.getMonth() };
   });
 
+  // Progress bar
+  const tieneVariantes = variantes.length > 0;
+  const PASOS = tieneVariantes
+    ? ["Servicio", "Tamaño", "Profesional", "Fecha y hora", "Confirmar"]
+    : ["Servicio", "Profesional", "Fecha y hora", "Confirmar"];
+  const displayPaso = tieneVariantes ? paso : (paso === 0 ? 0 : paso - 1);
+
+  // Fetch variants when service changes
+  useEffect(() => {
+    if (!servicioSel?.precio_desde) { setVariantes([]); setVarianteSel(null); return; }
+    setCargandoVariantes(true);
+    fetch(`/api/servicio-variantes?servicio_id=${servicioSel.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const v: ServicioVariante[] = Array.isArray(data) ? data : [];
+        setVariantes(v);
+        setCargandoVariantes(false);
+        // Service marked precio_desde but no variants configured → skip variant step
+        if (v.length === 0) setPaso((prev) => prev === 1 ? 2 : prev);
+      })
+      .catch(() => { setCargandoVariantes(false); setPaso((prev) => prev === 1 ? 2 : prev); });
+  }, [servicioSel?.id]);
+
+  // Reset slots when variant changes (duration may differ)
+  useEffect(() => {
+    setSlots([]);
+    setSlotSel(null);
+  }, [varianteSel?.id]);
+
   async function cargarSlots(profId: string, fechaStr: string) {
     if (!servicioSel) return;
+    const dur = varianteSel?.duracion_min ?? servicioSel.duracion_min;
     setCargandoSlots(true);
-    const s = await obtenerSlotsDisponibles(profId, fechaStr, servicioSel.duracion_min);
+    const s = await obtenerSlotsDisponibles(profId, fechaStr, dur);
     setSlots(s);
     setCargandoSlots(false);
   }
@@ -80,7 +125,6 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     setEnviando(true);
     const supabase = createClient();
 
-    // Buscar o crear cliente
     let clienteId: string;
     const { data: existente } = await supabase
       .from("clientes")
@@ -90,8 +134,6 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
 
     if (existente) {
       clienteId = existente.id;
-
-      // Rate limit: máximo 3 reservas hoy por este cliente
       const hoy = new Date().toISOString().split("T")[0];
       const { count } = await supabase
         .from("reservas")
@@ -114,18 +156,20 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     }
 
     const profId = cualquiera ? profesionalesDelServicio[0]?.id : profesionalSel?.id;
+    const duracion = varianteSel?.duracion_min ?? servicioSel.duracion_min;
+    const precio = Number(varianteSel?.precio ?? servicioSel.precio);
 
     await supabase.from("reservas").insert({
       cliente_id: clienteId,
       profesional_id: profId,
       servicio_id: servicioSel.id,
+      variante_id: varianteSel?.id ?? null,
       fecha,
       hora_inicio: slotSel.hora_inicio + ":00",
       hora_fin: slotSel.hora_fin + ":00",
       estado: "pendiente",
     });
 
-    // Enviar email si hay email
     if (email && profId) {
       const profNombre = cualquiera ? "Cualquier profesional" : (profesionalSel?.nombre ?? "");
       await fetch("/api/email-confirmacion", {
@@ -134,12 +178,12 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         body: JSON.stringify({
           clienteEmail: email,
           clienteNombre: nombre,
-          servicio: servicioSel.nombre,
+          servicio: varianteSel ? `${servicioSel.nombre} — ${varianteSel.nombre}` : servicioSel.nombre,
           profesional: profNombre,
           fecha,
           horaInicio: slotSel.hora_inicio,
-          duracionMin: servicioSel.duracion_min,
-          precio: servicioSel.precio,
+          duracionMin: duracion,
+          precio,
         }),
       });
     }
@@ -147,7 +191,6 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     router.push("/reservar/confirmacion");
   }
 
-  // Calendario
   const diasEnMes = new Date(mesCalendario.year, mesCalendario.month + 1, 0).getDate();
   const primerDiaSemana = new Date(mesCalendario.year, mesCalendario.month, 1).getDay();
   const hoy = startOfDay(new Date());
@@ -168,6 +211,13 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     return porBusqueda && porCategoria;
   });
 
+  const duracionDisplay = varianteSel?.duracion_min ?? servicioSel?.duracion_min ?? 0;
+  const precioDisplay = varianteSel
+    ? `${Number(varianteSel.precio).toFixed(2)} €`
+    : servicioSel?.precio_desde
+      ? `desde ${Number(servicioSel.precio).toFixed(0)} €`
+      : `${Number(servicioSel?.precio ?? 0).toFixed(2)} €`;
+
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
       {/* Barra de progreso */}
@@ -177,18 +227,18 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
             <div className="flex flex-col items-center">
               <motion.div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
-                  i < paso
+                  i < displayPaso
                     ? "bg-[#C4728A] border-[#C4728A] text-white"
-                    : i === paso
+                    : i === displayPaso
                     ? "border-[#C4728A] text-[#C4728A] shadow-[0_0_0_3px_rgba(196,114,138,0.2)]"
                     : "border-[#e8c5ce] text-[#6b6360]"
                 }`}
-                animate={i < paso ? { scale: [1, 1.15, 1] } : {}}
+                animate={i < displayPaso ? { scale: [1, 1.15, 1] } : {}}
                 transition={{ duration: 0.3 }}
               >
-                {i < paso ? <Check size={14} /> : i + 1}
+                {i < displayPaso ? <Check size={14} /> : i + 1}
               </motion.div>
-              <span className={`text-xs mt-1 hidden sm:block ${i === paso ? "text-[#C4728A] font-medium" : "text-[#6b6360]"}`}>
+              <span className={`text-xs mt-1 hidden sm:block ${i === displayPaso ? "text-[#C4728A] font-medium" : "text-[#6b6360]"}`}>
                 {p}
               </span>
             </div>
@@ -197,7 +247,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
                 <motion.div
                   className="absolute inset-y-0 left-0 bg-[#C4728A] rounded-full"
                   initial={{ width: "0%" }}
-                  animate={{ width: i < paso ? "100%" : "0%" }}
+                  animate={{ width: i < displayPaso ? "100%" : "0%" }}
                   transition={{ duration: 0.35, ease: "easeOut" }}
                 />
               </div>
@@ -207,7 +257,8 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       </div>
 
       <AnimatePresence mode="wait">
-      {/* PASO 1 — Servicio */}
+
+      {/* PASO 0 — Servicio */}
       {paso === 0 && (
         <motion.div key="step-0" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={stepTransition}>
           <h2 className="font-heading text-2xl text-[#1a1412] mb-4">Elige tu servicio</h2>
@@ -245,7 +296,13 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
                 key={s.id}
                 whileHover={cardHover}
                 whileTap={cardTap}
-                onClick={() => { setServicioSel(s); setPaso(1); }}
+                onClick={() => {
+                  setServicioSel(s);
+                  setVarianteSel(null);
+                  setVariantes([]);
+                  // precio_desde → go to variant step (will auto-skip if no variants configured)
+                  setPaso(s.precio_desde ? 1 : 2);
+                }}
                 className={`w-full text-left bg-white rounded-2xl border p-4 flex items-center justify-between transition-colors shadow-sm ${
                   servicioSel?.id === s.id ? "border-[#C4728A] ring-2 ring-[#C4728A]/20" : "border-[#e8c5ce]"
                 }`}
@@ -266,22 +323,67 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         </motion.div>
       )}
 
-      {/* PASO 2 — Profesional */}
-      {paso === 1 && (
+      {/* PASO 1 — Tamaño / Variante */}
+      {paso === 1 && servicioSel && (
         <motion.div key="step-1" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={stepTransition}>
+          <h2 className="font-heading text-2xl text-[#1a1412] mb-2">Elige el tamaño</h2>
+          <p className="text-xs text-[#6b6360] mb-5">
+            Para <span className="font-medium text-[#C4728A]">{servicioSel.nombre}</span>
+          </p>
+          {cargandoVariantes ? (
+            <div className="text-center py-10 text-[#6b6360] text-sm">
+              <div className="w-5 h-5 rounded-full border-2 border-[#C4728A] border-t-transparent animate-spin mx-auto mb-3" />
+              Cargando opciones...
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {variantes.map((v) => (
+                <motion.button
+                  key={v.id}
+                  whileHover={cardHover}
+                  whileTap={cardTap}
+                  onClick={() => { setVarianteSel(v); setPaso(2); }}
+                  className={`w-full text-left bg-white rounded-2xl border p-4 flex items-center justify-between transition-colors shadow-sm ${
+                    varianteSel?.id === v.id ? "border-[#C4728A] ring-2 ring-[#C4728A]/20" : "border-[#e8c5ce]"
+                  }`}
+                >
+                  <div>
+                    <p className="font-medium text-[#1a1412]">{v.nombre}</p>
+                    <p className="text-xs text-[#6b6360]">{v.duracion_min} min</p>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-3">
+                    <p className="font-bold text-[#C4728A]">{Number(v.precio).toFixed(2)} €</p>
+                    <p className="text-xs text-[#C4728A]">Elegir →</p>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={() => { setPaso(0); setVarianteSel(null); setVariantes([]); }}
+            className="mt-4 text-sm text-[#6b6360] hover:text-[#C4728A]"
+          >
+            ← Volver
+          </button>
+        </motion.div>
+      )}
+
+      {/* PASO 2 — Profesional */}
+      {paso === 2 && (
+        <motion.div key="step-2" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={stepTransition}>
           <h2 className="font-heading text-2xl text-[#1a1412] mb-2">Elige tu profesional</h2>
           {servicioSel && (
             <p className="text-xs text-[#6b6360] mb-4">
               Para <span className="font-medium text-[#C4728A]">{servicioSel.nombre}</span>
+              {varianteSel && <span className="text-[#C4728A]"> — {varianteSel.nombre}</span>}
               {" · "}{profesionalesDelServicio.length} disponible{profesionalesDelServicio.length !== 1 ? "s" : ""}
             </p>
           )}
           <div className="space-y-3">
-            {/* Cualquiera */}
             <motion.button
               whileHover={cardHover}
               whileTap={cardTap}
-              onClick={() => { setCualquiera(true); setProfesionalSel(null); setPaso(2); }}
+              onClick={() => { setCualquiera(true); setProfesionalSel(null); setPaso(3); }}
               className="w-full bg-[#f7e8ed] border-2 border-[#C4728A]/30 rounded-2xl p-4 text-left hover:border-[#C4728A] transition-colors"
             >
               <p className="font-semibold text-[#1a1412]">🌸 Cualquier profesional</p>
@@ -294,7 +396,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
                   key={p.id}
                   whileHover={cardHover}
                   whileTap={cardTap}
-                  onClick={() => { setProfesionalSel(p); setCualquiera(false); setPaso(2); }}
+                  onClick={() => { setProfesionalSel(p); setCualquiera(false); setPaso(3); }}
                   className={`bg-white rounded-2xl border p-4 text-center transition-colors ${
                     !cualquiera && profesionalSel?.id === p.id
                       ? "border-[#C4728A] ring-2 ring-[#C4728A]/20"
@@ -314,15 +416,15 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
               ))}
             </div>
           </div>
-          <button onClick={() => setPaso(0)} className="mt-4 text-sm text-[#6b6360] hover:text-[#C4728A]">
+          <button onClick={() => setPaso(tieneVariantes ? 1 : 0)} className="mt-4 text-sm text-[#6b6360] hover:text-[#C4728A]">
             ← Volver
           </button>
         </motion.div>
       )}
 
       {/* PASO 3 — Fecha y hora */}
-      {paso === 2 && (
-        <motion.div key="step-2" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={stepTransition}>
+      {paso === 3 && (
+        <motion.div key="step-3" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={stepTransition}>
           <h2 className="font-heading text-2xl text-[#1a1412] mb-4">Elige fecha y hora</h2>
 
           {/* Calendario */}
@@ -356,7 +458,6 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
               ))}
             </div>
             <div className="grid grid-cols-7 text-center text-sm">
-              {/* Espacios vacíos inicio */}
               {Array.from({ length: primerDiaSemana === 0 ? 6 : primerDiaSemana - 1 }).map((_, i) => (
                 <div key={`empty-${i}`} />
               ))}
@@ -423,13 +524,13 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
           )}
 
           <div className="flex gap-3 mt-6">
-            <button onClick={() => setPaso(1)} className="flex-1 border border-[#e8c5ce] text-[#6b6360] py-2.5 rounded-xl text-sm hover:bg-[#f4f1ef] transition-colors">
+            <button onClick={() => setPaso(2)} className="flex-1 border border-[#e8c5ce] text-[#6b6360] py-2.5 rounded-xl text-sm hover:bg-[#f4f1ef] transition-colors">
               ← Volver
             </button>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setPaso(3)}
+              onClick={() => setPaso(4)}
               disabled={!slotSel}
               className="flex-1 bg-[#C4728A] hover:bg-[#a85a72] text-white py-2.5 rounded-xl font-medium text-sm disabled:opacity-40 transition-colors"
             >
@@ -440,8 +541,8 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       )}
 
       {/* PASO 4 — Confirmar */}
-      {paso === 3 && servicioSel && slotSel && (
-        <motion.div key="step-3" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={stepTransition}>
+      {paso === 4 && servicioSel && slotSel && (
+        <motion.div key="step-4" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={stepTransition}>
           <h2 className="font-heading text-2xl text-[#1a1412] mb-4">Confirmar reserva</h2>
 
           {/* Resumen */}
@@ -452,6 +553,12 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
                 <span className="text-[#6b6360]">Servicio</span>
                 <span className="font-medium">{servicioSel.nombre}</span>
               </div>
+              {varianteSel && (
+                <div className="flex justify-between">
+                  <span className="text-[#6b6360]">Tamaño</span>
+                  <span className="font-medium">{varianteSel.nombre}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-[#6b6360]">Profesional</span>
                 <span className="font-medium">{cualquiera ? "Cualquier profesional" : profesionalSel?.nombre}</span>
@@ -468,13 +575,11 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
               </div>
               <div className="flex justify-between">
                 <span className="text-[#6b6360]">Duración</span>
-                <span className="font-medium">{servicioSel.duracion_min} min</span>
+                <span className="font-medium">{duracionDisplay} min</span>
               </div>
               <div className="flex justify-between border-t border-[#ffffff10] pt-2 mt-2">
                 <span className="text-[#6b6360]">Precio</span>
-                <span className="font-bold text-[#C4728A] text-lg">
-                  {servicioSel.precio_desde ? `desde ${Number(servicioSel.precio).toFixed(0)} €` : `${Number(servicioSel.precio).toFixed(2)} €`}
-                </span>
+                <span className="font-bold text-[#C4728A] text-lg">{precioDisplay}</span>
               </div>
             </div>
           </div>
@@ -517,7 +622,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
           </motion.button>
           <p className="text-xs text-center text-[#6b6360] mt-2">Recibirás confirmación por email</p>
 
-          <button onClick={() => setPaso(2)} className="mt-4 text-sm text-[#6b6360] hover:text-[#C4728A] block mx-auto">
+          <button onClick={() => setPaso(3)} className="mt-4 text-sm text-[#6b6360] hover:text-[#C4728A] block mx-auto">
             ← Volver
           </button>
         </motion.div>

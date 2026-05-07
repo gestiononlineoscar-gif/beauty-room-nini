@@ -181,7 +181,10 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
               <div>
                 <p className="text-xs text-[#6b6360]">Servicio</p>
                 <p className="font-medium text-[#1a1412]">{reserva.servicios.nombre}</p>
-                <p className="text-sm text-[#6b6360]">{reserva.servicios.duracion_min} min</p>
+                {reserva.variante && (
+                  <p className="text-xs font-medium text-[#C4728A] mt-0.5">{reserva.variante.nombre}</p>
+                )}
+                <p className="text-sm text-[#6b6360]">{reserva.variante?.duracion_min ?? reserva.servicios.duracion_min} min</p>
               </div>
             </div>
           )}
@@ -215,7 +218,13 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
               <Euro size={16} className="text-[#C4728A] mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-xs text-[#6b6360]">Precio</p>
-                <p className="font-medium text-[#C4728A] text-lg">{Number(reserva.servicios.precio).toFixed(2)} €</p>
+                <p className="font-medium text-[#C4728A] text-lg">
+                  {reserva.variante
+                    ? `${Number(reserva.variante.precio).toFixed(2)} €`
+                    : reserva.servicios.precio_desde
+                      ? `desde ${Number(reserva.servicios.precio).toFixed(0)} €`
+                      : `${Number(reserva.servicios.precio).toFixed(2)} €`}
+                </p>
               </div>
             </div>
           )}

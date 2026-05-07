@@ -21,6 +21,15 @@ export interface Servicio {
   created_at: string;
 }
 
+export interface ServicioVariante {
+  id: string;
+  servicio_id: string;
+  nombre: string;
+  duracion_min: number;
+  precio: number;
+  orden: number;
+}
+
 export interface ProfesionalServicio {
   profesional_id: string;
   servicio_id: string;
@@ -70,6 +79,7 @@ export interface Reserva {
   hora_fin: string;
   estado: EstadoReserva;
   notas: string | null;
+  variante_id: string | null;
   pagado: boolean;
   metodo_pago: string | null;
   created_at: string;
@@ -77,6 +87,7 @@ export interface Reserva {
   clientes?: Cliente;
   profesionales?: Profesional;
   servicios?: Servicio;
+  variante?: ServicioVariante | null;
 }
 
 export interface Usuario {

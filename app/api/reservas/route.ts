@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("reservas")
-    .select("*, clientes(*), profesionales(*), servicios(*)")
+    .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
     .gte("fecha", desde)
     .lte("fecha", hasta)
     .order("fecha")
