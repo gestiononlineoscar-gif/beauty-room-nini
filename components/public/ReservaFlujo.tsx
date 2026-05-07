@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase";
 import { format, parseISO, isBefore, startOfDay, getDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { obtenerSlotsDisponibles } from "@/lib/disponibilidad";
 import type { Servicio, Profesional, ProfesionalServicio, SlotDisponible, ServicioVariante } from "@/types";
 import { CATEGORIAS_SERVICIOS, ICONOS_CATEGORIA } from "@/types";
 import { Check } from "lucide-react";
@@ -103,8 +102,13 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     if (!servicioSel) return;
     const dur = varianteSel?.duracion_min ?? servicioSel.duracion_min;
     setCargandoSlots(true);
-    const s = await obtenerSlotsDisponibles(profId, fechaStr, dur);
-    setSlots(s);
+    try {
+      const res = await fetch(`/api/slots?profesional_id=${profId}&fecha=${fechaStr}&duracion_min=${dur}`);
+      const data: SlotDisponible[] = await res.json();
+      setSlots(Array.isArray(data) ? data : []);
+    } catch {
+      setSlots([]);
+    }
     setCargandoSlots(false);
   }
 
