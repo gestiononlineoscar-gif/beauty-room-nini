@@ -9,12 +9,12 @@ import { FadeIn } from "@/components/public/FadeIn";
 const IMAGEN_CATEGORIA: Record<string, string> = {
   Manicura:             "/servicios/manicura.jpg",
   Pedicura:             "/servicios/pedicura.jpg",
-  "Depilación Hilo":    "/servicios/depilacion-hilo.jpg",
-  "Depilación Pinza":   "/servicios/depilacion-pinza.jpg",
+  "Depilación Hilo":    "/servicios/depilacion-hilo.png",
+  "Depilación Pinza":   "/servicios/depilacion-pinza.png",
   "Depilación Cera":    "/servicios/depilacion-cera.jpg",
   Peluquería:           "/servicios/peluqueria.jpg",
   Estética:             "/servicios/estetica.jpg",
-  Pestañas:             "/servicios/pestanas.jpg",
+  Pestañas:             "/servicios/pestanas.png",
   "Bienestar y Salud":  "/servicios/bienestar.jpg",
 };
 
