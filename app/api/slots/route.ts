@@ -60,8 +60,11 @@ export async function GET(req: NextRequest) {
   let current = parse(horario.hora_inicio as string, "HH:mm:ss", baseDate);
   const fin = parse(horario.hora_fin as string, "HH:mm:ss", baseDate);
   const finConDuracion = addMinutes(fin, -duracionMin);
-  const ahora = new Date();
-  const esHoy = fecha === format(ahora, "yyyy-MM-dd");
+  // Comparar en hora local de Madrid (el servidor Vercel corre en UTC)
+  const ahoraUTC = new Date();
+  const esHoy = fecha === ahoraUTC.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+  const ahoraMadridStr = ahoraUTC.toLocaleTimeString("en-GB", { timeZone: "Europe/Madrid", hour12: false });
+  const ahora = parse(ahoraMadridStr, "HH:mm:ss", baseDate);
 
   while (!isAfter(current, finConDuracion)) {
     if (esHoy && !isAfter(current, ahora)) {
