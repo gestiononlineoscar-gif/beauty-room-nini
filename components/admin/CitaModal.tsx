@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import type { Reserva, Profesional, EstadoReserva } from "@/types";
-import { Check, X, Pencil, Clock, Euro, User, Scissors, Banknote, CreditCard } from "lucide-react";
+import { Check, X, Pencil, Clock, Euro, User, Scissors, Banknote, CreditCard, Save } from "lucide-react";
 
 const METODOS_PAGO = ["Efectivo", "Tarjeta", "Bizum"] as const;
 type MetodoPago = (typeof METODOS_PAGO)[number];
@@ -36,6 +35,13 @@ interface Props {
   onEliminada: (id: string) => void;
 }
 
+function calcularHoraFin(inicio: string, duracion: number): string {
+  const [h, m] = inicio.split(":").map(Number);
+  if (isNaN(h) || isNaN(m)) return inicio;
+  const total = h * 60 + m + duracion;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 export function CitaModal({ reserva, profesionales, open, onClose, onActualizada, onEliminada }: Props) {
   const [loading, setLoading] = useState(false);
   const [notas, setNotas] = useState(reserva.notas ?? "");
@@ -47,8 +53,30 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
   const [historial, setHistorial] = useState<Reserva[] | null>(null);
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
 
+  // Edit mode
+  const [editando, setEditando] = useState(false);
+  const [editFecha, setEditFecha] = useState(reserva.fecha);
+  const [editHoraInicio, setEditHoraInicio] = useState(reserva.hora_inicio.slice(0, 5));
+  const [editHoraFin, setEditHoraFin] = useState(reserva.hora_fin.slice(0, 5));
+  const [editProfId, setEditProfId] = useState(reserva.profesional_id ?? "");
+
+  useEffect(() => {
+    setNotas(reserva.notas ?? "");
+    setEditandoNotas(false);
+    setPagado(reserva.pagado ?? false);
+    setMetodoPago((reserva.metodo_pago as MetodoPago) ?? "");
+    setHistorial(null);
+    setMostrarHistorial(false);
+    setEditando(false);
+    setEditFecha(reserva.fecha);
+    setEditHoraInicio(reserva.hora_inicio.slice(0, 5));
+    setEditHoraFin(reserva.hora_fin.slice(0, 5));
+    setEditProfId(reserva.profesional_id ?? "");
+  }, [reserva.id]);
+
   const profesional = profesionales.find((p) => p.id === reserva.profesional_id);
   const fecha = format(parseISO(reserva.fecha), "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
+  const duracionServicio = reserva.variante?.duracion_min ?? reserva.servicios?.duracion_min ?? 60;
 
   function generarLinkWhatsApp() {
     const tel = reserva.clientes?.telefono ?? "";
@@ -83,6 +111,36 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
       toast.error("Error al actualizar la cita");
     } else {
       toast.success(`Cita marcada como ${LABELS_ESTADO[nuevoEstado].toLowerCase()}`);
+      onActualizada(data as Reserva);
+    }
+    setLoading(false);
+  }
+
+  async function guardarEdicion() {
+    if (!editHoraInicio || !editHoraFin || !editFecha) return;
+    if (editHoraFin <= editHoraInicio) {
+      toast.error("La hora de fin debe ser posterior a la de inicio");
+      return;
+    }
+    setLoading(true);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("reservas")
+      .update({
+        fecha: editFecha,
+        hora_inicio: editHoraInicio + ":00",
+        hora_fin: editHoraFin + ":00",
+        profesional_id: editProfId || null,
+      })
+      .eq("id", reserva.id)
+      .select("*, clientes(*), profesionales(*), servicios(*)")
+      .single();
+
+    if (error) {
+      toast.error("Error al editar la cita");
+    } else {
+      toast.success("Cita actualizada");
+      setEditando(false);
       onActualizada(data as Reserva);
     }
     setLoading(false);
@@ -189,31 +247,86 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
             </div>
           )}
 
-          {profesional && (
-            <div className="flex items-start gap-3 pt-3 border-t border-[#f4f1ef]">
-              <div
-                className="w-4 h-4 rounded-full mt-0.5 flex-shrink-0"
-                style={{ backgroundColor: profesional.color }}
-              />
-              <div>
-                <p className="text-xs text-[#6b6360]">Profesional</p>
-                <p className="font-medium text-[#1a1412]">{profesional.nombre}</p>
-              </div>
-            </div>
-          )}
-
+          {/* Profesional — view or edit */}
           <div className="flex items-start gap-3 pt-3 border-t border-[#f4f1ef]">
-            <Clock size={16} className="text-[#C4728A] mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-[#6b6360]">Fecha y hora</p>
-              <p className="font-medium text-[#1a1412] capitalize">{fecha}</p>
-              <p className="text-sm text-[#6b6360]">
-                {reserva.hora_inicio.slice(0, 5)} – {reserva.hora_fin.slice(0, 5)}
-              </p>
+            <div
+              className="w-4 h-4 rounded-full mt-0.5 flex-shrink-0"
+              style={{ backgroundColor: editando
+                ? (profesionales.find(p => p.id === editProfId)?.color ?? "#e8c5ce")
+                : (profesional?.color ?? "#e8c5ce") }}
+            />
+            <div className="flex-1">
+              <p className="text-xs text-[#6b6360]">Profesional</p>
+              {editando ? (
+                <select
+                  value={editProfId}
+                  onChange={(e) => setEditProfId(e.target.value)}
+                  className="mt-1 w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#C4728A] bg-white"
+                >
+                  <option value="">— Sin asignar —</option>
+                  {profesionales.map((p) => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                  ))}
+                </select>
+              ) : (
+                <p className="font-medium text-[#1a1412]">{profesional?.nombre ?? "—"}</p>
+              )}
             </div>
           </div>
 
-          {reserva.servicios && (
+          {/* Fecha y hora — view or edit */}
+          <div className="flex items-start gap-3 pt-3 border-t border-[#f4f1ef]">
+            <Clock size={16} className="text-[#C4728A] mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-[#6b6360]">Fecha y hora</p>
+              {editando ? (
+                <div className="mt-1 space-y-2">
+                  <input
+                    type="date"
+                    value={editFecha}
+                    onChange={(e) => setEditFecha(e.target.value)}
+                    className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#C4728A] bg-white"
+                  />
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <p className="text-[10px] text-[#6b6360] mb-0.5">Inicio</p>
+                      <input
+                        type="time"
+                        step="300"
+                        value={editHoraInicio}
+                        onChange={(e) => {
+                          setEditHoraInicio(e.target.value);
+                          setEditHoraFin(calcularHoraFin(e.target.value, duracionServicio));
+                        }}
+                        className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#C4728A] bg-white"
+                      />
+                    </div>
+                    <span className="text-[#6b6360] mt-4">–</span>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-[#6b6360] mb-0.5">Fin</p>
+                      <input
+                        type="time"
+                        step="300"
+                        value={editHoraFin}
+                        onChange={(e) => setEditHoraFin(e.target.value)}
+                        className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#C4728A] bg-white"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-[#6b6360]">La hora fin se ajusta automáticamente pero puedes cambiarla manualmente.</p>
+                </div>
+              ) : (
+                <>
+                  <p className="font-medium text-[#1a1412] capitalize">{fecha}</p>
+                  <p className="text-sm text-[#6b6360]">
+                    {reserva.hora_inicio.slice(0, 5)} – {reserva.hora_fin.slice(0, 5)}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {reserva.servicios && !editando && (
             <div className="flex items-start gap-3 pt-3 border-t border-[#f4f1ef]">
               <Euro size={16} className="text-[#C4728A] mt-0.5 flex-shrink-0" />
               <div>
@@ -227,6 +340,38 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
                 </p>
               </div>
             </div>
+          )}
+
+          {/* Edit action row */}
+          {editando ? (
+            <div className="flex gap-2 pt-3 border-t border-[#f4f1ef]">
+              <button
+                onClick={guardarEdicion}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-[#C4728A] text-white text-sm py-2 rounded-xl hover:bg-[#a85a72] transition-colors disabled:opacity-50"
+              >
+                <Save size={14} /> Guardar cambios
+              </button>
+              <button
+                onClick={() => {
+                  setEditando(false);
+                  setEditFecha(reserva.fecha);
+                  setEditHoraInicio(reserva.hora_inicio.slice(0, 5));
+                  setEditHoraFin(reserva.hora_fin.slice(0, 5));
+                  setEditProfId(reserva.profesional_id ?? "");
+                }}
+                className="px-4 text-sm border border-[#e8c5ce] rounded-xl hover:bg-[#f4f1ef] transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditando(true)}
+              className="w-full flex items-center justify-center gap-1.5 text-xs text-[#6b6360] hover:text-[#C4728A] pt-3 border-t border-[#f4f1ef] transition-colors"
+            >
+              <Pencil size={12} /> Editar cita
+            </button>
           )}
         </div>
 

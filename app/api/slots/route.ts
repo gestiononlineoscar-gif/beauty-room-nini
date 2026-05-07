@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
 
   while (!isAfter(current, finConDuracion)) {
     if (esHoy && !isAfter(current, ahora)) {
-      current = addMinutes(current, 30);
+      current = addMinutes(current, 15);
       continue;
     }
 
@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
       disponible: !(ocupadoPorReserva || ocupadoPorBloqueo),
     });
 
-    current = addMinutes(current, 30);
+    current = addMinutes(current, 15);
   }
 
   return NextResponse.json(slots);
