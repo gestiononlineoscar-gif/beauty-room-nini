@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -36,9 +37,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">💅</div>
-          <h1 className="font-heading text-3xl text-[#1a1412]">beauty room</h1>
-          <h1 className="font-heading text-3xl text-[#C4728A] font-bold">nini</h1>
+          <Image src="/logo-square.png" alt="Beauty Room Nini" width={100} height={100} className="rounded-full mx-auto mb-4 shadow-lg" />
           <p className="text-[#6b6360] text-sm mt-2">Panel de administración</p>
         </div>
 
