@@ -1,0 +1,34 @@
+# Beauty Room Nini
+
+> Salón de belleza y bienestar en Alcobendas, Madrid.
+
+Beauty Room Nini es un salón de belleza ubicado en Alcobendas (Madrid, España) que ofrece servicios de manicura, pedicura, peluquería, depilación (hilo, pinza y cera), extensiones de pestañas, estética facial y tratamientos de bienestar.
+
+## Servicios principales
+
+- **Manicura y Pedicura**: manicura semipermanente, gel, acrílico, pedicura spa
+- **Peluquería**: corte, tinte, mechas, balayage, tratamientos capilares
+- **Depilación**: hilo facial, pinza, cera corporal y facial
+- **Pestañas**: extensiones y lifting de pestañas
+- **Estética**: tratamientos faciales, masajes relajantes
+- **Bienestar y Salud**: masajes y tratamientos de bienestar
+
+## Reservas
+
+Los clientes pueden reservar cita online en: https://beautyroomnini.es/reservar
+
+## Horario
+
+- Lunes – Martes: 10:00 – 20:00
+- Miércoles – Viernes: 10:00 – 21:00
+- Sábado: 10:00 – 17:00
+- Domingo: Cerrado
+
+## Ubicación
+
+C. de la Constitución, 53, 28100 Alcobendas, Madrid, España
+
+## Contacto
+
+Teléfono: +34 604 85 02 49
+Web: https://beautyroomnini.es

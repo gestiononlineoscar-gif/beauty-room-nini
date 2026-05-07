@@ -40,6 +40,46 @@ export const metadata: Metadata = {
   },
 };
 
+const schemaOrg = {
+  "@context": "https://schema.org",
+  "@type": "BeautySalon",
+  "name": "Beauty Room Nini",
+  "description": "Salón de belleza en Alcobendas, Madrid. Especialistas en manicura, pedicura, peluquería, depilación, pestañas y estética.",
+  "url": "https://beautyroomnini.es",
+  "telephone": "+34604850249",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "C. de la Constitución, 53",
+    "addressLocality": "Alcobendas",
+    "addressRegion": "Madrid",
+    "postalCode": "28100",
+    "addressCountry": "ES"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": 40.5447,
+    "longitude": -3.6394
+  },
+  "image": "https://beautyroomnini.es/logo-square.png",
+  "priceRange": "€€",
+  "currenciesAccepted": "EUR",
+  "paymentAccepted": "Cash, Credit Card",
+  "hasMap": "https://maps.google.com/?q=Beauty+Room+Nini+Alcobendas",
+  "openingHoursSpecification": [
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday"], "opens": "10:00", "closes": "20:00" },
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Wednesday","Thursday","Friday"], "opens": "10:00", "closes": "21:00" },
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "10:00", "closes": "17:00" }
+  ],
+  "makesOffer": [
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Manicura" } },
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Pedicura" } },
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Peluquería" } },
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Depilación" } },
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Extensiones de pestañas" } },
+    { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Estética facial" } }
+  ]
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -47,6 +87,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${playfair.variable} ${dmSans.variable} h-full antialiased`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <CustomCursor />
         {children}
