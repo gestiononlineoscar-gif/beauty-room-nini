@@ -7,12 +7,15 @@ import type { Servicio } from "@/types";
 import { FadeIn } from "@/components/public/FadeIn";
 
 const IMAGEN_CATEGORIA: Record<string, string> = {
-  Manicura:   "/servicios/manicura.jpg",
-  Pedicura:   "/servicios/pedicura.jpg",
-  Depilación: "/servicios/depilacion.jpg",
-  Peluquería: "/servicios/peluqueria.jpg",
-  Estética:   "/servicios/estetica.jpg",
-  Bienestar:  "/servicios/bienestar.jpg",
+  Manicura:             "/servicios/manicura.jpg",
+  Pedicura:             "/servicios/pedicura.jpg",
+  "Depilación Hilo":    "/servicios/depilacion-hilo.jpg",
+  "Depilación Pinza":   "/servicios/depilacion-pinza.jpg",
+  "Depilación Cera":    "/servicios/depilacion-cera.jpg",
+  Peluquería:           "/servicios/peluqueria.jpg",
+  Estética:             "/servicios/estetica.jpg",
+  Pestañas:             "/servicios/pestanas.jpg",
+  "Bienestar y Salud":  "/servicios/bienestar.jpg",
 };
 
 interface Props {
@@ -34,7 +37,12 @@ export function ServiceCardFlip({ cats, servicios }: Props) {
                 {/* ── Cara delantera ── */}
                 <div className="flip-card-front relative overflow-hidden rounded-2xl border border-[#C4728A]/15 shadow-[0_4px_20px_rgba(196,114,138,0.1)]">
                   <Image
-                    src={IMAGEN_CATEGORIA[cat] ?? "/hero.png"}
+                    src={
+                      IMAGEN_CATEGORIA[cat] ??
+                      (cat.startsWith("Depilación") ? "/servicios/depilacion.jpg" :
+                       cat === "Pestañas" ? "/servicios/estetica.jpg" :
+                       "/hero.png")
+                    }
                     alt={cat}
                     fill
                     sizes="(max-width: 768px) 50vw, 33vw"
