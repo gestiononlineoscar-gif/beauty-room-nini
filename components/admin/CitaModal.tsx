@@ -148,7 +148,7 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-full sm:max-w-md bg-[#fdf6f0] border-l border-[#e8c5ce]">
+      <SheetContent side="right" className="w-full sm:max-w-md bg-[#fdf6f0] border-l border-[#e8c5ce] overflow-y-auto flex flex-col pb-10">
         <SheetHeader className="mb-6">
           <SheetTitle className="font-heading text-xl text-[#1a1412]">Detalle de cita</SheetTitle>
         </SheetHeader>
