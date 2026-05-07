@@ -124,6 +124,37 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
     }
     setLoading(true);
     const supabase = createClient();
+
+    // Verificar solapamientos con otras citas del mismo profesional
+    if (editProfId) {
+      const { data: conflictos } = await supabase
+        .from("reservas")
+        .select("id, hora_inicio, hora_fin, clientes(nombre), servicios(nombre)")
+        .eq("profesional_id", editProfId)
+        .eq("fecha", editFecha)
+        .neq("id", reserva.id)
+        .neq("estado", "cancelada");
+
+      const solapadas = (conflictos ?? []).filter((r) => {
+        // Overlap: inicio < rFin && fin > rInicio
+        return editHoraInicio + ":00" < r.hora_fin && editHoraFin + ":00" > r.hora_inicio;
+      });
+
+      if (solapadas.length > 0) {
+        const prof = profesionales.find((p) => p.id === editProfId);
+        const detalle = solapadas
+          .map((r) => `${r.hora_inicio.slice(0, 5)}–${r.hora_fin.slice(0, 5)} (${(r.clientes as unknown as {nombre:string}|undefined)?.nombre ?? "cliente"})`)
+          .join(", ");
+        const continuar = confirm(
+          `⚠️ Solapamiento con ${prof?.nombre ?? "esta profesional"}:\n${detalle}\n\n¿Guardar igualmente?`
+        );
+        if (!continuar) {
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from("reservas")
       .update({
