@@ -25,7 +25,7 @@ export default async function AgendaPage() {
   const [{ data: profesionales }, { data: reservas }, { data: bloqueos }] = await Promise.all([
     supabase.from("profesionales").select("*").eq("activo", true).order("nombre"),
     supabase.from("reservas")
-      .select("*, clientes(*), profesionales(*), servicios(*)")
+      .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
       .gte("fecha", desde)
       .lte("fecha", hasta),
     supabase.from("bloqueos_horario")

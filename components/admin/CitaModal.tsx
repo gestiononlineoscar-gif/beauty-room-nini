@@ -6,24 +6,27 @@ import { createClient } from "@/lib/supabase";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
-import type { Reserva, Profesional, EstadoReserva } from "@/types";
-import { Check, X, Pencil, Clock, Euro, User, Scissors, Banknote, CreditCard, Save } from "lucide-react";
+import type { Reserva, Profesional, EstadoReserva, Servicio, ServicioVariante } from "@/types";
+import { CATEGORIAS_SERVICIOS } from "@/types";
+import { Check, X, Pencil, Clock, Euro, User, Scissors, Banknote, CreditCard, Save, UserX } from "lucide-react";
 
 const METODOS_PAGO = ["Efectivo", "Tarjeta", "Bizum"] as const;
 type MetodoPago = (typeof METODOS_PAGO)[number];
 
 const COLORES_ESTADO: Record<EstadoReserva, string> = {
-  pendiente:   "bg-amber-100 text-amber-700 border-amber-200",
-  confirmada:  "bg-green-100 text-green-700 border-green-200",
-  completada:  "bg-gray-100 text-gray-600 border-gray-200",
-  cancelada:   "bg-red-100 text-red-600 border-red-200",
+  pendiente:      "bg-amber-100 text-amber-700 border-amber-200",
+  confirmada:     "bg-green-100 text-green-700 border-green-200",
+  completada:     "bg-gray-100 text-gray-600 border-gray-200",
+  cancelada:      "bg-red-100 text-red-600 border-red-200",
+  no_presentada:  "bg-orange-100 text-orange-700 border-orange-200",
 };
 
 const LABELS_ESTADO: Record<EstadoReserva, string> = {
-  pendiente:  "Pendiente",
-  confirmada: "Confirmada",
-  completada: "Completada",
-  cancelada:  "Cancelada",
+  pendiente:     "Pendiente",
+  confirmada:    "Confirmada",
+  completada:    "Completada",
+  cancelada:     "Cancelada",
+  no_presentada: "No presentada",
 };
 
 interface Props {
@@ -59,6 +62,10 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
   const [editHoraInicio, setEditHoraInicio] = useState(reserva.hora_inicio.slice(0, 5));
   const [editHoraFin, setEditHoraFin] = useState(reserva.hora_fin.slice(0, 5));
   const [editProfId, setEditProfId] = useState(reserva.profesional_id ?? "");
+  const [editServicioId, setEditServicioId] = useState(reserva.servicio_id ?? "");
+  const [editVarianteId, setEditVarianteId] = useState(reserva.variante_id ?? "");
+  const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [variantesEdit, setVariantesEdit] = useState<ServicioVariante[]>([]);
 
   useEffect(() => {
     setNotas(reserva.notas ?? "");
@@ -72,11 +79,35 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
     setEditHoraInicio(reserva.hora_inicio.slice(0, 5));
     setEditHoraFin(reserva.hora_fin.slice(0, 5));
     setEditProfId(reserva.profesional_id ?? "");
+    setEditServicioId(reserva.servicio_id ?? "");
+    setEditVarianteId(reserva.variante_id ?? "");
+    setVariantesEdit([]);
   }, [reserva.id]);
+
+  // Cargar servicios la primera vez que se abre el formulario de edición
+  useEffect(() => {
+    if (!editando || servicios.length > 0) return;
+    createClient()
+      .from("servicios").select("*").eq("activo", true).order("categoria").order("nombre")
+      .then(({ data }) => setServicios((data ?? []) as Servicio[]));
+  }, [editando]);
+
+  // Cargar variantes cuando cambia el servicio en edición
+  useEffect(() => {
+    if (!editando || !editServicioId) { setVariantesEdit([]); return; }
+    const svc = servicios.find(s => s.id === editServicioId);
+    if (!svc?.precio_desde) { setVariantesEdit([]); setEditVarianteId(""); return; }
+    createClient()
+      .from("servicio_variantes").select("*").eq("servicio_id", editServicioId).order("orden")
+      .then(({ data }) => setVariantesEdit((data ?? []) as ServicioVariante[]));
+  }, [editServicioId, editando]);
 
   const profesional = profesionales.find((p) => p.id === reserva.profesional_id);
   const fecha = format(parseISO(reserva.fecha), "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
   const duracionServicio = reserva.variante?.duracion_min ?? reserva.servicios?.duracion_min ?? 60;
+  const servicioEdit = servicios.find(s => s.id === editServicioId);
+  const varianteEdit = variantesEdit.find(v => v.id === editVarianteId);
+  const duracionEdit = varianteEdit?.duracion_min ?? servicioEdit?.duracion_min ?? duracionServicio;
 
   function generarLinkWhatsApp() {
     const tel = reserva.clientes?.telefono ?? "";
@@ -104,7 +135,7 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
       .from("reservas")
       .update({ estado: nuevoEstado })
       .eq("id", reserva.id)
-      .select("*, clientes(*), profesionales(*), servicios(*)")
+      .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
       .single();
 
     if (error) {
@@ -162,9 +193,11 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
         hora_inicio: editHoraInicio + ":00",
         hora_fin: editHoraFin + ":00",
         profesional_id: editProfId || null,
+        servicio_id: editServicioId || null,
+        variante_id: editVarianteId || null,
       })
       .eq("id", reserva.id)
-      .select("*, clientes(*), profesionales(*), servicios(*)")
+      .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
       .single();
 
     if (error) {
@@ -184,7 +217,7 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
       .from("reservas")
       .update({ notas })
       .eq("id", reserva.id)
-      .select("*, clientes(*), profesionales(*), servicios(*)")
+      .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
       .single();
 
     if (error) {
@@ -218,7 +251,7 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
       .from("reservas")
       .update({ pagado: nuevoPagado, metodo_pago: nuevoMetodo || null })
       .eq("id", reserva.id)
-      .select("*, clientes(*), profesionales(*), servicios(*)")
+      .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
       .single();
     if (error) {
       toast.error("Error al actualizar el pago");
@@ -233,6 +266,49 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
   async function cancelarCita() {
     if (!confirm("¿Cancelar esta cita?")) return;
     actualizarEstado("cancelada");
+  }
+
+  async function marcarInasistencia() {
+    if (!confirm("¿Marcar como inasistencia? La clienta no se presentó a la cita.")) return;
+    setLoading(true);
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+      .from("reservas")
+      .update({ estado: "no_presentada" })
+      .eq("id", reserva.id)
+      .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
+      .single();
+
+    if (error) {
+      toast.error("Error al actualizar la cita");
+      setLoading(false);
+      return;
+    }
+
+    if (reserva.cliente_id) {
+      const { data: cli } = await supabase
+        .from("clientes").select("inasistencias").eq("id", reserva.cliente_id).single();
+      const total = (cli?.inasistencias ?? 0) + 1;
+      await supabase.from("clientes").update({ inasistencias: total }).eq("id", reserva.cliente_id);
+
+      toast.success(`Inasistencia registrada (${total} en total)`);
+
+      if (total >= 2) {
+        const bloquear = confirm(
+          `Esta clienta lleva ${total} inasistencias. ¿Bloquearla para que no pueda reservar online?`
+        );
+        if (bloquear) {
+          await supabase.from("clientes").update({ bloqueado: true }).eq("id", reserva.cliente_id);
+          toast.success("Clienta bloqueada");
+        }
+      }
+    } else {
+      toast.success("Inasistencia registrada");
+    }
+
+    onActualizada(data as Reserva);
+    setLoading(false);
   }
 
   return (
@@ -264,19 +340,70 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
             </div>
           )}
 
-          {reserva.servicios && (
-            <div className="flex items-start gap-3 pt-3 border-t border-[#f4f1ef]">
-              <Scissors size={16} className="text-[#C4728A] mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-[#6b6360]">Servicio</p>
-                <p className="font-medium text-[#1a1412]">{reserva.servicios.nombre}</p>
-                {reserva.variante && (
-                  <p className="text-xs font-medium text-[#C4728A] mt-0.5">{reserva.variante.nombre}</p>
-                )}
-                <p className="text-sm text-[#6b6360]">{reserva.variante?.duracion_min ?? reserva.servicios.duracion_min} min</p>
-              </div>
+          <div className="flex items-start gap-3 pt-3 border-t border-[#f4f1ef]">
+            <Scissors size={16} className="text-[#C4728A] mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-[#6b6360]">Servicio</p>
+              {editando ? (
+                <div className="mt-1 space-y-1.5">
+                  <select
+                    value={editServicioId}
+                    onChange={(e) => {
+                      setEditServicioId(e.target.value);
+                      setEditVarianteId("");
+                      // Recalcular hora_fin con la duración del nuevo servicio
+                      const svc = servicios.find(s => s.id === e.target.value);
+                      if (svc && editHoraInicio) {
+                        setEditHoraFin(calcularHoraFin(editHoraInicio, svc.duracion_min));
+                      }
+                    }}
+                    className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#C4728A] bg-white"
+                  >
+                    <option value="">— Sin servicio —</option>
+                    {CATEGORIAS_SERVICIOS.map(cat => {
+                      const del = servicios.filter(s => s.categoria === cat);
+                      if (!del.length) return null;
+                      return (
+                        <optgroup key={cat} label={cat}>
+                          {del.map(s => (
+                            <option key={s.id} value={s.id}>{s.nombre}</option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
+                  </select>
+                  {variantesEdit.length > 0 && (
+                    <select
+                      value={editVarianteId}
+                      onChange={(e) => {
+                        setEditVarianteId(e.target.value);
+                        const v = variantesEdit.find(v => v.id === e.target.value);
+                        if (v && editHoraInicio) {
+                          setEditHoraFin(calcularHoraFin(editHoraInicio, v.duracion_min));
+                        }
+                      }}
+                      className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#C4728A] bg-white"
+                    >
+                      <option value="">— Sin variante —</option>
+                      {variantesEdit.map(v => (
+                        <option key={v.id} value={v.id}>{v.nombre} · {v.duracion_min} min</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <p className="font-medium text-[#1a1412]">{reserva.servicios?.nombre ?? "—"}</p>
+                  {reserva.variante && (
+                    <p className="text-xs font-medium text-[#C4728A] mt-0.5">{reserva.variante.nombre}</p>
+                  )}
+                  {reserva.servicios && (
+                    <p className="text-sm text-[#6b6360]">{reserva.variante?.duracion_min ?? reserva.servicios.duracion_min} min</p>
+                  )}
+                </>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Profesional — view or edit */}
           <div className="flex items-start gap-3 pt-3 border-t border-[#f4f1ef]">
@@ -327,7 +454,7 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
                         value={editHoraInicio}
                         onChange={(e) => {
                           setEditHoraInicio(e.target.value);
-                          setEditHoraFin(calcularHoraFin(e.target.value, duracionServicio));
+                          setEditHoraFin(calcularHoraFin(e.target.value, duracionEdit));
                         }}
                         className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#C4728A] bg-white"
                       />
@@ -390,6 +517,9 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
                   setEditHoraInicio(reserva.hora_inicio.slice(0, 5));
                   setEditHoraFin(reserva.hora_fin.slice(0, 5));
                   setEditProfId(reserva.profesional_id ?? "");
+                  setEditServicioId(reserva.servicio_id ?? "");
+                  setEditVarianteId(reserva.variante_id ?? "");
+                  setVariantesEdit([]);
                 }}
                 className="px-4 text-sm border border-[#e8c5ce] rounded-xl hover:bg-[#f4f1ef] transition-colors"
               >
@@ -561,7 +691,7 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
         )}
 
         {/* Acciones */}
-        {reserva.estado !== "cancelada" && reserva.estado !== "completada" && (
+        {reserva.estado !== "cancelada" && reserva.estado !== "completada" && reserva.estado !== "no_presentada" && (
           <div className="space-y-2">
             {reserva.estado === "pendiente" && (
               <button
@@ -578,6 +708,13 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
               className="w-full flex items-center justify-center gap-2 bg-[#2B5BA8] hover:bg-[#1e4a90] text-white py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
             >
               <Check size={16} /> Marcar completada
+            </button>
+            <button
+              onClick={marcarInasistencia}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 border border-orange-200 text-orange-600 hover:bg-orange-50 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
+            >
+              <UserX size={16} /> Marcar inasistencia
             </button>
             <button
               onClick={cancelarCita}

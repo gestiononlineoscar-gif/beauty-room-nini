@@ -10,10 +10,11 @@ import { NuevaReservaModal } from "./NuevaReservaModal";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
 const COLORES_ESTADO: Record<EstadoReserva, string> = {
-  pendiente:   "bg-amber-100 text-amber-700",
-  confirmada:  "bg-green-100 text-green-700",
-  completada:  "bg-gray-100 text-gray-600",
-  cancelada:   "bg-red-100 text-red-600",
+  pendiente:     "bg-amber-100 text-amber-700",
+  confirmada:    "bg-green-100 text-green-700",
+  completada:    "bg-gray-100 text-gray-600",
+  cancelada:     "bg-red-100 text-red-600",
+  no_presentada: "bg-orange-100 text-orange-700",
 };
 
 const POR_PAGINA = 20;
@@ -99,6 +100,7 @@ export function ReservasLista({ reservasIniciales, profesionales }: Props) {
           <option value="confirmada">Confirmada</option>
           <option value="completada">Completada</option>
           <option value="cancelada">Cancelada</option>
+          <option value="no_presentada">No presentada</option>
         </select>
         {hayFiltros && (
           <button onClick={resetFiltros} className="text-xs text-[#6b6360] underline">Limpiar</button>

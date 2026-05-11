@@ -8,7 +8,7 @@ export default async function ReservasPage() {
   const [{ data: reservas }, { data: profesionales }] = await Promise.all([
     supabase
       .from("reservas")
-      .select("*, clientes(*), profesionales(*), servicios(*)")
+      .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
       .order("fecha", { ascending: false })
       .order("hora_inicio", { ascending: false })
       .limit(100),

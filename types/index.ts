@@ -42,6 +42,8 @@ export interface Cliente {
   telefono: string | null;
   email: string | null;
   notas: string | null;
+  inasistencias: number;
+  bloqueado: boolean;
   created_at: string;
 }
 
@@ -68,7 +70,7 @@ export interface DiaLibre {
   motivo: string | null;
 }
 
-export type EstadoReserva = "pendiente" | "confirmada" | "completada" | "cancelada";
+export type EstadoReserva = "pendiente" | "confirmada" | "completada" | "cancelada" | "no_presentada";
 
 export interface Reserva {
   id: string;

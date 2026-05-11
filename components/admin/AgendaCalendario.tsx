@@ -195,6 +195,13 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
         border: "1px solid rgba(156,163,175,0.4)",
         boxShadow: "none",
       };
+    } else if (estado === "no_presentada") {
+      style = {
+        ...style,
+        background: "rgba(251,146,60,0.5)",
+        border: "1px solid rgba(251,146,60,0.4)",
+        boxShadow: "none",
+      };
     }
     return { style };
   }, []);

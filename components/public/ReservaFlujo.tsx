@@ -348,13 +348,19 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     let clienteId: string;
     const { data: existente } = await supabase
       .from("clientes")
-      .select("id")
+      .select("id, bloqueado")
       .eq("telefono", telefono)
       .maybeSingle();
 
+    if (existente?.bloqueado) {
+      setEnviando(false);
+      alert("No es posible realizar reservas online desde esta cuenta. Por favor contacta con el salón.");
+      return;
+    }
+
     if (existente) {
       clienteId = existente.id;
-      const hoy = new Date().toISOString().split("T")[0];
+      const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
       const { count } = await supabase
         .from("reservas")
         .select("id", { count: "exact", head: true })
@@ -367,12 +373,17 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         return;
       }
     } else {
-      const { data: nuevo } = await supabase
+      const { data: nuevo, error: errorCliente } = await supabase
         .from("clientes")
         .insert({ nombre, telefono, email })
         .select()
         .single();
-      clienteId = nuevo?.id;
+      if (errorCliente || !nuevo?.id) {
+        setEnviando(false);
+        alert("Error al registrar tus datos. Por favor inténtalo de nuevo.");
+        return;
+      }
+      clienteId = nuevo.id;
     }
 
     const profId = cualquiera ? (cualquieraProfMap[slotSel.hora_inicio] ?? profesionalesDelServicio[0]?.id) : profesionalSel?.id;
@@ -388,7 +399,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       fecha,
       hora_inicio: slotSel.hora_inicio + ":00",
       hora_fin: slotSel.hora_fin + ":00",
-      estado: "pendiente",
+      estado: "confirmada",
     });
 
     // Insertar reserva 2 (si aplica)
@@ -424,7 +435,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         fecha,
         hora_inicio: slotSel.hora_fin + ":00",
         hora_fin: s2FinStr + ":00",
-        estado: "pendiente",
+        estado: "confirmada",
       });
     }
 
@@ -436,7 +447,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         : null;
       const servicioLabel = s2Label ? `${s1Label} + ${s2Label}` : s1Label;
 
-      const prof1Nombre = cualquiera ? "Cualquier profesional" : (profesionalSel?.nombre ?? "");
+      const prof1Nombre = cualquiera ? "Sin preferencia" : (profesionalSel?.nombre ?? "");
       const profId2Final = servicio2
         ? (cualquiera2 ? (cualquieraProfMap2[slotSel.hora_fin] ?? null) : profesional2?.id)
         : null;
@@ -684,21 +695,23 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
           )}
 
           <div className={`space-y-3 ${verificandoS2 ? "opacity-40 pointer-events-none" : ""}`}>
-            <motion.button
-              whileHover={cardHover}
-              whileTap={cardTap}
-              onClick={() => {
-                if (configurandoS2) {
-                  seleccionarProfesionalS2(null, true);
-                } else {
-                  setCualquiera(true); setProfesionalSel(null); setPaso(3);
-                }
-              }}
-              className="w-full bg-[#f7e8ed] border-2 border-[#C4728A]/30 rounded-2xl p-4 text-left hover:border-[#C4728A] transition-colors"
-            >
-              <p className="font-semibold text-[#1a1412]">🌸 Cualquier profesional</p>
-              <p className="text-xs text-[#6b6360] mt-0.5">Se asignará automáticamente la primera disponible</p>
-            </motion.button>
+            {profesionalesDelServicio.length > 1 && (
+              <motion.button
+                whileHover={cardHover}
+                whileTap={cardTap}
+                onClick={() => {
+                  if (configurandoS2) {
+                    seleccionarProfesionalS2(null, true);
+                  } else {
+                    setCualquiera(true); setProfesionalSel(null); setPaso(3);
+                  }
+                }}
+                className="w-full bg-[#f7e8ed] border-2 border-[#C4728A]/30 rounded-2xl p-4 text-left hover:border-[#C4728A] transition-colors"
+              >
+                <p className="font-semibold text-[#1a1412]">🌸 Sin preferencia</p>
+                <p className="text-xs text-[#6b6360] mt-0.5">Se asignará la primera disponible del servicio</p>
+              </motion.button>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               {profesionalesDelServicio.map((p) => (
@@ -932,7 +945,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
               )}
               <div className="flex justify-between">
                 <span className="text-[#6b6360]">Profesional</span>
-                <span className="font-medium">{cualquiera ? "Cualquier profesional" : profesionalSel?.nombre}</span>
+                <span className="font-medium">{cualquiera ? "Sin preferencia" : profesionalSel?.nombre}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#6b6360]">Fecha</span>
@@ -971,7 +984,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
                   <div className="flex justify-between">
                     <span className="text-[#6b6360]">Profesional</span>
                     <span className="font-medium">
-                      {prof2Asignado?.nombre ?? (cualquiera2 ? "Cualquier profesional" : "—")}
+                      {prof2Asignado?.nombre ?? (cualquiera2 ? "Sin preferencia" : "—")}
                     </span>
                   </div>
                   <div className="flex justify-between">
