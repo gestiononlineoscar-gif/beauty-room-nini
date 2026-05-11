@@ -693,22 +693,6 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
         {/* Acciones */}
         {reserva.estado !== "cancelada" && reserva.estado !== "completada" && reserva.estado !== "no_presentada" && (
           <div className="space-y-2">
-            {reserva.estado === "pendiente" && (
-              <button
-                onClick={() => actualizarEstado("confirmada")}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-[#4a9b6f] hover:bg-[#3a8060] text-white py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
-              >
-                <Check size={16} /> Confirmar cita
-              </button>
-            )}
-            <button
-              onClick={() => actualizarEstado("completada")}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-[#2B5BA8] hover:bg-[#1e4a90] text-white py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
-            >
-              <Check size={16} /> Marcar completada
-            </button>
             <button
               onClick={marcarInasistencia}
               disabled={loading}
