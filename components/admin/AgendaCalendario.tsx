@@ -253,7 +253,7 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
   };
 
   const minHour = new Date(); minHour.setHours(9, 30, 0, 0);
-  const maxHour = new Date(); maxHour.setHours(20, 30, 0, 0);
+  const maxHour = new Date(); maxHour.setHours(21, 30, 0, 0);
   const isDayView = view === "day";
 
   const profesionalPreseleccionada = slotSeleccionado?.resourceId
