@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { createClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Cliente } from "@/types";
 
@@ -26,13 +25,13 @@ export function ClientesLista({ clientes: inicial }: Props) {
 
   async function toggleBloqueado(cliente: Cliente) {
     const nuevo = !cliente.bloqueado;
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("clientes")
-      .update({ bloqueado: nuevo })
-      .eq("id", cliente.id);
+    const res = await fetch(`/api/clientes/${cliente.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bloqueado: nuevo }),
+    });
 
-    if (error) { toast.error("Error al actualizar el cliente"); return; }
+    if (!res.ok) { toast.error("Error al actualizar el cliente"); return; }
 
     setClientes(prev => prev.map(c => c.id === cliente.id ? { ...c, bloqueado: nuevo } : c));
     toast.success(nuevo ? "Clienta bloqueada" : "Clienta desbloqueada");

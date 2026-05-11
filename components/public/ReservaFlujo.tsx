@@ -129,7 +129,8 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         .filter((ps) => ps.servicio_id === servicioSel.id)
         .map((ps) => ps.profesional_id)
     );
-    return profesionales.filter((p) => ids.has(p.id));
+    // Si no hay asignaciones configuradas para este servicio, mostrar todos
+    return ids.size > 0 ? profesionales.filter((p) => ids.has(p.id)) : profesionales;
   }, [servicioSel, profesionales, profesionalServicios]);
 
   const serviciosFiltrados = servicios.filter((s) => {

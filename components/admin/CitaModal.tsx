@@ -287,10 +287,12 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
     }
 
     if (reserva.cliente_id) {
-      const { data: cli } = await supabase
-        .from("clientes").select("inasistencias").eq("id", reserva.cliente_id).single();
-      const total = (cli?.inasistencias ?? 0) + 1;
-      await supabase.from("clientes").update({ inasistencias: total }).eq("id", reserva.cliente_id);
+      const total = (reserva.clientes?.inasistencias ?? 0) + 1;
+      await fetch(`/api/clientes/${reserva.cliente_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inasistencias: total }),
+      });
 
       toast.success(`Inasistencia registrada (${total} en total)`);
 
@@ -299,7 +301,11 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
           `Esta clienta lleva ${total} inasistencias. ¿Bloquearla para que no pueda reservar online?`
         );
         if (bloquear) {
-          await supabase.from("clientes").update({ bloqueado: true }).eq("id", reserva.cliente_id);
+          await fetch(`/api/clientes/${reserva.cliente_id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bloqueado: true }),
+          });
           toast.success("Clienta bloqueada");
         }
       }
