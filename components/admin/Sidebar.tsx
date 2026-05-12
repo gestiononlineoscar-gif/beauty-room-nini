@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase";
 import type { Usuario } from "@/types";
 import {
   CalendarDays, List, Scissors, Users, UserCircle,
-  BarChart2, Clock, Settings, LogOut, User, MoreHorizontal, X
+  BarChart2, Clock, Settings, LogOut, User, MoreHorizontal, X, Send
 } from "lucide-react";
 
 interface NavItem {
@@ -20,8 +20,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: "/admin/agenda",        label: "Agenda",        icon: <CalendarDays size={18} /> },
-  { href: "/admin/reservas",      label: "Reservas",      icon: <List size={18} /> },
+  { href: "/admin/agenda",           label: "Agenda",          icon: <CalendarDays size={18} /> },
+  { href: "/admin/reservas",         label: "Reservas",        icon: <List size={18} /> },
+  { href: "/admin/recordatorios",    label: "Recordatorios",   icon: <Send size={18} /> },
   { href: "/admin/servicios",     label: "Servicios",     icon: <Scissors size={18} />,  soloAdmin: true },
   { href: "/admin/profesionales", label: "Profesionales", icon: <Users size={18} />,     soloAdmin: true },
   { href: "/admin/clientes",      label: "Clientes",      icon: <UserCircle size={18} /> },
