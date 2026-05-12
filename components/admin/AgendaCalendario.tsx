@@ -248,12 +248,12 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
     const h = horarios[profId].find((r) => r.dia_semana === diaSemana);
 
     if (!h?.trabaja) {
-      return { style: { backgroundColor: "#f3f4f6" } };
+      return { style: { backgroundColor: "#d1d5db" } };
     }
 
     const horaStr = format(date, "HH:mm:ss");
     if (horaStr < h.hora_inicio || horaStr >= h.hora_fin) {
-      return { style: { backgroundColor: "#f3f4f6" } };
+      return { style: { backgroundColor: "#d1d5db" } };
     }
 
     return {};
