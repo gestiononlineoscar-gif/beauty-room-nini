@@ -138,8 +138,11 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
   }
 
   // Servicios filtrados por búsqueda
+  const normalize = (s: string) =>
+    s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
   const serviciosFiltrados = servicios.filter((s) =>
-    !busquedaServicio || s.nombre.toLowerCase().includes(busquedaServicio.toLowerCase())
+    !busquedaServicio || normalize(s.nombre).includes(normalize(busquedaServicio))
   );
 
   async function handleCrear(e: React.FormEvent) {
