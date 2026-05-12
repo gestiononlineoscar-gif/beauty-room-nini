@@ -19,8 +19,31 @@ const stepVariants = {
 const cardHover = { scale: 1.02 } as const;
 const cardTap   = { scale: 0.98 } as const;
 
+const ORDINAL_ES = ["segundo", "tercer", "cuarto"] as const;
+
+type ExtraServicio = {
+  servicio: Servicio;
+  variante: ServicioVariante | null;
+  profesional: Profesional | null;
+  esCualquiera: boolean;
+  profIdAsignado: string | null;
+  horaInicio: string;
+  horaFin: string;
+};
+
+function exDur(ex: ExtraServicio) { return ex.variante?.duracion_min ?? ex.servicio.duracion_min; }
+function exPrecio(ex: ExtraServicio) { return Number(ex.variante?.precio ?? ex.servicio.precio); }
+function exPrecioDisplay(ex: ExtraServicio) {
+  if (ex.variante) return `${Number(ex.variante.precio).toFixed(2)} €`;
+  if (ex.servicio.precio_desde) return `desde ${Number(ex.servicio.precio).toFixed(0)} €`;
+  return `${Number(ex.servicio.precio).toFixed(2)} €`;
+}
+function exProfAsignado(ex: ExtraServicio, profs: Profesional[]) {
+  return ex.profIdAsignado ? profs.find((p) => p.id === ex.profIdAsignado) : ex.profesional;
+}
+
 // Paso numbering:
-//   0 = Servicio (también usado para 2.° servicio en modo S2)
+//   0 = Servicio (también usado para servicio extra en modo configurandoExtra)
 //   1 = Tamaño/Variante  (solo servicios precio_desde con variantes)
 //   2 = Profesional
 //   3 = Fecha y hora
@@ -61,15 +84,12 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
   const [slots, setSlots] = useState<SlotDisponible[]>([]);
   const [cargandoSlots, setCargandoSlots] = useState(false);
 
-  // ── Servicio 2 ──
-  const [servicio2, setServicio2] = useState<Servicio | null>(null);
-  const [variante2, setVariante2] = useState<ServicioVariante | null>(null);
-  const [profesional2, setProfesional2] = useState<Profesional | null>(null);
-  const [cualquiera2, setCualquiera2] = useState(false);
-  const [cualquieraProfMap2, setCualquieraProfMap2] = useState<Record<string, string>>({});
+  // ── Servicios extra (S2, S3, S4) ──
+  const [serviciosExtra, setServiciosExtra] = useState<ExtraServicio[]>([]);
 
-  // ── Modo configuración S2 ──
-  const [configurandoS2, setConfigurandoS2] = useState(false);
+  // ── Modo configuración de servicio extra ──
+  const [configurandoExtra, setConfigurandoExtra] = useState(false);
+  const [horaInicioExtra, setHoraInicioExtra] = useState("");
   const [s1Backup, setS1Backup] = useState<{
     servicio: Servicio;
     variante: ServicioVariante | null;
@@ -77,8 +97,8 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     cualquiera: boolean;
     cualquieraProfMap: Record<string, string>;
   } | null>(null);
-  const [verificandoS2, setVerificandoS2] = useState(false);
-  const [errorS2, setErrorS2] = useState("");
+  const [verificandoExtra, setVerificandoExtra] = useState(false);
+  const [errorExtra, setErrorExtra] = useState("");
 
   // ── Datos del cliente ──
   const [nombre, setNombre] = useState("");
@@ -129,7 +149,6 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         .filter((ps) => ps.servicio_id === servicioSel.id)
         .map((ps) => ps.profesional_id)
     );
-    // Si no hay asignaciones configuradas para este servicio, mostrar todos
     return ids.size > 0 ? profesionales.filter((p) => ids.has(p.id)) : profesionales;
   }, [servicioSel, profesionales, profesionalServicios]);
 
@@ -146,17 +165,10 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       ? `desde ${Number(servicioSel.precio).toFixed(0)} €`
       : `${Number(servicioSel?.precio ?? 0).toFixed(2)} €`;
 
-  const dur2Display = variante2?.duracion_min ?? servicio2?.duracion_min ?? 0;
-  const precio2Display = variante2
-    ? `${Number(variante2.precio).toFixed(2)} €`
-    : servicio2?.precio_desde
-      ? `desde ${Number(servicio2.precio).toFixed(0)} €`
-      : `${Number(servicio2?.precio ?? 0).toFixed(2)} €`;
-
-  // Professional assigned to service 2 (for display)
-  const prof2Asignado = cualquiera2
-    ? profesionales.find((p) => p.id === cualquieraProfMap2[slotSel?.hora_fin ?? ""])
-    : profesional2;
+  function horaInicioSiguiente(): string {
+    if (serviciosExtra.length === 0) return slotSel?.hora_fin ?? "";
+    return serviciosExtra[serviciosExtra.length - 1].horaFin;
+  }
 
   // ── Slot loading ──
   async function cargarSlots(profId: string, fechaStr: string) {
@@ -177,8 +189,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     setFecha(fechaStr);
     setSlotSel(null);
     setSlots([]);
-    // Clear S2 when date changes since availability was tied to old slot
-    quitarServicio2();
+    setServiciosExtra([]);
     if (!servicioSel) return;
     const dur = varianteSel?.duracion_min ?? servicioSel.duracion_min;
 
@@ -214,8 +225,10 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     }
   }
 
-  // ── S2 helpers ──
-  function iniciarS2() {
+  // ── Helpers para gestionar servicios extra ──
+  function iniciarExtra() {
+    const horaInicio = horaInicioSiguiente();
+    setHoraInicioExtra(horaInicio);
     setS1Backup({
       servicio: servicioSel!,
       variante: varianteSel,
@@ -231,12 +244,12 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     setCualquieraProfMap({});
     setBusqueda("");
     setCategoriaFiltro(null);
-    setConfigurandoS2(true);
-    setErrorS2("");
+    setConfigurandoExtra(true);
+    setErrorExtra("");
     setPaso(0);
   }
 
-  function cancelarS2() {
+  function cancelarExtra() {
     if (s1Backup) {
       setServicioSel(s1Backup.servicio);
       setVarianteSel(s1Backup.variante);
@@ -246,35 +259,37 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       setCualquieraProfMap(s1Backup.cualquieraProfMap);
       setS1Backup(null);
     }
-    setConfigurandoS2(false);
-    setErrorS2("");
+    setConfigurandoExtra(false);
+    setErrorExtra("");
     setPaso(3);
   }
 
-  function quitarServicio2() {
-    setServicio2(null);
-    setVariante2(null);
-    setProfesional2(null);
-    setCualquiera2(false);
-    setCualquieraProfMap2({});
+  function quitarExtra(idx: number) {
+    setServiciosExtra((prev) => prev.slice(0, idx));
   }
 
-  async function seleccionarProfesionalS2(prof: Profesional | null, esCualquiera: boolean) {
-    if (!servicioSel || !slotSel) return;
-    setVerificandoS2(true);
-    setErrorS2("");
-    const dur2 = varianteSel?.duracion_min ?? servicioSel.duracion_min;
-    const horaInicioS2 = slotSel.hora_fin;
+  async function seleccionarProfesionalExtra(prof: Profesional | null, esCualquiera: boolean) {
+    if (!servicioSel) return;
+    setVerificandoExtra(true);
+    setErrorExtra("");
+    const dur = varianteSel?.duracion_min ?? servicioSel.duracion_min;
 
     const checkDisponible = async (profId: string) => {
       const res = await fetch(
-        `/api/disponible?profesional_id=${profId}&fecha=${fecha}&hora_inicio=${horaInicioS2}&duracion_min=${dur2}`
+        `/api/disponible?profesional_id=${profId}&fecha=${fecha}&hora_inicio=${horaInicioExtra}&duracion_min=${dur}`
       );
       const data = await res.json();
       return data.disponible === true;
     };
 
+    const base = new Date();
+    const iniDate = parse(horaInicioExtra, "HH:mm", base);
+    const finDate = addMinutes(iniDate, dur);
+    const horaFin = format(finDate, "HH:mm");
+
     try {
+      let profIdAsignado: string | null = null;
+
       if (esCualquiera) {
         const resultados = await Promise.all(
           profesionalesDelServicio.map(async (p) => ({
@@ -284,26 +299,32 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         );
         const disponible = resultados.find((r) => r.disponible);
         if (!disponible) {
-          setErrorS2(`No hay profesionales disponibles a las ${horaInicioS2}. Prueba con otro horario para el primer servicio.`);
-          setVerificandoS2(false);
+          setErrorExtra(`No hay profesionales disponibles a las ${horaInicioExtra}. Prueba con otro horario para el servicio anterior.`);
+          setVerificandoExtra(false);
           return;
         }
-        setCualquieraProfMap2({ [horaInicioS2]: disponible.profId });
+        profIdAsignado = disponible.profId;
       } else {
         const libre = await checkDisponible(prof!.id);
         if (!libre) {
-          setErrorS2(`${prof!.nombre} no está disponible a las ${horaInicioS2}. Prueba con otro profesional o cambia el horario.`);
-          setVerificandoS2(false);
+          setErrorExtra(`${prof!.nombre} no está disponible a las ${horaInicioExtra}. Prueba con otra profesional o cambia el horario.`);
+          setVerificandoExtra(false);
           return;
         }
-        setCualquieraProfMap2({});
       }
 
-      // Guardar S2 y restaurar S1
-      setServicio2(servicioSel);
-      setVariante2(varianteSel);
-      setProfesional2(esCualquiera ? null : prof);
-      setCualquiera2(esCualquiera);
+      const nuevoExtra: ExtraServicio = {
+        servicio: servicioSel,
+        variante: varianteSel,
+        profesional: esCualquiera ? null : prof,
+        esCualquiera,
+        profIdAsignado: esCualquiera ? profIdAsignado : null,
+        horaInicio: horaInicioExtra,
+        horaFin,
+      };
+
+      setServiciosExtra((prev) => [...prev, nuevoExtra]);
+
       if (s1Backup) {
         setServicioSel(s1Backup.servicio);
         setVarianteSel(s1Backup.variante);
@@ -313,12 +334,12 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         setCualquieraProfMap(s1Backup.cualquieraProfMap);
         setS1Backup(null);
       }
-      setConfigurandoS2(false);
-      setVerificandoS2(false);
+      setConfigurandoExtra(false);
+      setVerificandoExtra(false);
       setPaso(4);
     } catch {
-      setErrorS2("Error al verificar disponibilidad. Inténtalo de nuevo.");
-      setVerificandoS2(false);
+      setErrorExtra("Error al verificar disponibilidad. Inténtalo de nuevo.");
+      setVerificandoExtra(false);
     }
   }
 
@@ -393,7 +414,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     const duracion = varianteSel?.duracion_min ?? servicioSel.duracion_min;
     const precio = Number(varianteSel?.precio ?? servicioSel.precio);
 
-    // Insertar reserva 1
+    // Insertar reserva S1
     await supabase.from("reservas").insert({
       cliente_id: clienteId,
       profesional_id: profId,
@@ -405,39 +426,31 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       estado: "confirmada",
     });
 
-    // Insertar reserva 2 (si aplica)
-    if (servicio2) {
-      const dur2 = variante2?.duracion_min ?? servicio2.duracion_min;
-      const profId2 = cualquiera2
-        ? (cualquieraProfMap2[slotSel.hora_fin] ?? profId)
-        : (profesional2?.id ?? profId);
+    // Insertar reservas extra (S2, S3, S4)
+    for (const ex of serviciosExtra) {
+      const profIdEx = ex.profIdAsignado ?? ex.profesional?.id ?? profId;
 
-      // Re-verificar disponibilidad S2 (previene doble reserva)
       try {
-        const res2 = await fetch(`/api/slots?profesional_id=${profId2}&fecha=${fecha}&duracion_min=${dur2}`);
-        const slotsS2: SlotDisponible[] = await res2.json();
-        const slotS2 = slotsS2.find((s) => s.hora_inicio === slotSel.hora_fin);
-        if (!slotS2?.disponible) {
+        const res = await fetch(
+          `/api/disponible?profesional_id=${profIdEx}&fecha=${fecha}&hora_inicio=${ex.horaInicio}&duracion_min=${exDur(ex)}`
+        );
+        const data = await res.json();
+        if (!data.disponible) {
           setEnviando(false);
-          alert(`Lo sentimos, el segundo servicio ya no está disponible a las ${slotSel.hora_fin}. La primera cita ya fue guardada. Por favor contacta con el salón.`);
+          alert(`Lo sentimos, el servicio "${ex.servicio.nombre}" ya no está disponible a las ${ex.horaInicio}. Los servicios anteriores ya fueron guardados. Por favor contacta con el salón.`);
           router.push("/reservar/confirmacion");
           return;
         }
       } catch { /* continuar */ }
 
-      const base = new Date();
-      const s2InicioDate = parse(slotSel.hora_fin, "HH:mm", base);
-      const s2FinDate = addMinutes(s2InicioDate, dur2);
-      const s2FinStr = format(s2FinDate, "HH:mm");
-
       await supabase.from("reservas").insert({
         cliente_id: clienteId,
-        profesional_id: profId2,
-        servicio_id: servicio2.id,
-        variante_id: variante2?.id ?? null,
+        profesional_id: profIdEx,
+        servicio_id: ex.servicio.id,
+        variante_id: ex.variante?.id ?? null,
         fecha,
-        hora_inicio: slotSel.hora_fin + ":00",
-        hora_fin: s2FinStr + ":00",
+        hora_inicio: ex.horaInicio + ":00",
+        hora_fin: ex.horaFin + ":00",
         estado: "confirmada",
       });
     }
@@ -445,25 +458,14 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     // Email de confirmación
     if (email && profId) {
       const s1Label = varianteSel ? `${servicioSel.nombre} — ${varianteSel.nombre}` : servicioSel.nombre;
-      const s2Label = servicio2
-        ? (variante2 ? `${servicio2.nombre} — ${variante2.nombre}` : servicio2.nombre)
-        : null;
-      const servicioLabel = s2Label ? `${s1Label} + ${s2Label}` : s1Label;
+      const servicioLabel = [
+        s1Label,
+        ...serviciosExtra.map((ex) => ex.variante ? `${ex.servicio.nombre} — ${ex.variante.nombre}` : ex.servicio.nombre),
+      ].join(" + ");
 
       const prof1Nombre = cualquiera ? "Sin preferencia" : (profesionalSel?.nombre ?? "");
-      const profId2Final = servicio2
-        ? (cualquiera2 ? (cualquieraProfMap2[slotSel.hora_fin] ?? null) : profesional2?.id)
-        : null;
-      const prof2Nombre = profId2Final
-        ? (profesionales.find((p) => p.id === profId2Final)?.nombre ?? "")
-        : null;
-      const profesionalLabel = (prof2Nombre && prof2Nombre !== prof1Nombre)
-        ? `${prof1Nombre} + ${prof2Nombre}`
-        : prof1Nombre;
-
-      const dur2 = servicio2 ? (variante2?.duracion_min ?? servicio2.duracion_min) : 0;
-      const duracionTotal = duracion + dur2;
-      const precio2 = servicio2 ? Number(variante2?.precio ?? servicio2.precio) : 0;
+      const durTotal = duracion + serviciosExtra.reduce((sum, ex) => sum + exDur(ex), 0);
+      const precioTotal = precio + serviciosExtra.reduce((sum, ex) => sum + exPrecio(ex), 0);
 
       await fetch("/api/email-confirmacion", {
         method: "POST",
@@ -472,11 +474,11 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
           clienteEmail: email,
           clienteNombre: nombre,
           servicio: servicioLabel,
-          profesional: profesionalLabel,
+          profesional: prof1Nombre,
           fecha,
           horaInicio: slotSel.hora_inicio,
-          duracionMin: duracionTotal,
-          precio: precio + precio2,
+          duracionMin: durTotal,
+          precio: precioTotal,
         }),
       });
     }
@@ -493,8 +495,8 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
 
-      {/* Barra de progreso (oculta en modo S2) */}
-      {!configurandoS2 ? (
+      {/* Barra de progreso (oculta en modo extra) */}
+      {!configurandoExtra ? (
         <div className="flex items-center justify-between mb-8">
           {PASOS.map((p, i) => (
             <div key={p} className="flex items-center">
@@ -530,14 +532,14 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
           ))}
         </div>
       ) : (
-        /* Barra S2 */
+        /* Barra modo servicio extra */
         <div className="flex items-center justify-between mb-8">
-          <button onClick={cancelarS2} className="text-sm text-[#6b6360] hover:text-[#C4728A] transition-colors">
+          <button onClick={cancelarExtra} className="text-sm text-[#6b6360] hover:text-[#C4728A] transition-colors">
             ← Cancelar
           </button>
           <div className="flex items-center gap-2">
             <span className="text-xs bg-[#f7e8ed] text-[#C4728A] font-semibold px-3 py-1 rounded-full">
-              2.° servicio
+              {serviciosExtra.length + 2}.° servicio
             </span>
             <span className="text-xs text-[#6b6360]">
               {paso === 0 || paso === 1 ? "Elegir servicio" : "Elegir profesional"}
@@ -552,11 +554,11 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       {paso === 0 && (
         <motion.div key="step-0" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={stepTransition}>
           <h2 className="font-heading text-2xl text-[#1a1412] mb-4">
-            {configurandoS2 ? "Añade un segundo servicio" : "Elige tu servicio"}
+            {configurandoExtra ? `Añade un ${ORDINAL_ES[serviciosExtra.length]} servicio` : "Elige tu servicio"}
           </h2>
-          {configurandoS2 && slotSel && (
+          {configurandoExtra && (
             <p className="text-sm text-[#6b6360] mb-4 bg-[#f7e8ed] rounded-xl px-3 py-2">
-              Empezará a las <span className="font-semibold text-[#C4728A]">{slotSel.hora_fin}</span>, justo después del primer servicio.
+              Empezará a las <span className="font-semibold text-[#C4728A]">{horaInicioExtra}</span>, justo después del servicio anterior.
             </p>
           )}
           <input
@@ -668,43 +670,43 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       {paso === 2 && (
         <motion.div key="step-2" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={stepTransition}>
           <h2 className="font-heading text-2xl text-[#1a1412] mb-2">
-            {configurandoS2 ? "Profesional para el 2.° servicio" : "Elige tu profesional"}
+            {configurandoExtra ? `Profesional para el ${serviciosExtra.length + 2}.° servicio` : "Elige tu profesional"}
           </h2>
           {servicioSel && (
             <p className="text-xs text-[#6b6360] mb-4">
               Para <span className="font-medium text-[#C4728A]">{servicioSel.nombre}</span>
               {varianteSel && <span className="text-[#C4728A]"> — {varianteSel.nombre}</span>}
-              {configurandoS2 && slotSel && (
-                <span> · <span className="font-medium">a las {slotSel.hora_fin}</span></span>
+              {configurandoExtra && (
+                <span> · <span className="font-medium">a las {horaInicioExtra}</span></span>
               )}
-              {!configurandoS2 && (
+              {!configurandoExtra && (
                 <span>{" · "}{profesionalesDelServicio.length} disponible{profesionalesDelServicio.length !== 1 ? "s" : ""}</span>
               )}
             </p>
           )}
 
-          {/* Error S2 */}
-          {errorS2 && (
+          {/* Error extra */}
+          {errorExtra && (
             <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-sm text-red-600">
-              {errorS2}
+              {errorExtra}
             </div>
           )}
 
-          {verificandoS2 && (
+          {verificandoExtra && (
             <div className="flex items-center gap-2 mb-4 text-sm text-[#6b6360]">
               <div className="w-4 h-4 rounded-full border-2 border-[#C4728A] border-t-transparent animate-spin" />
               Verificando disponibilidad...
             </div>
           )}
 
-          <div className={`space-y-3 ${verificandoS2 ? "opacity-40 pointer-events-none" : ""}`}>
+          <div className={`space-y-3 ${verificandoExtra ? "opacity-40 pointer-events-none" : ""}`}>
             {profesionalesDelServicio.length > 1 && (
               <motion.button
                 whileHover={cardHover}
                 whileTap={cardTap}
                 onClick={() => {
-                  if (configurandoS2) {
-                    seleccionarProfesionalS2(null, true);
+                  if (configurandoExtra) {
+                    seleccionarProfesionalExtra(null, true);
                   } else {
                     setCualquiera(true); setProfesionalSel(null); setPaso(3);
                   }
@@ -723,8 +725,8 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
                   whileHover={cardHover}
                   whileTap={cardTap}
                   onClick={() => {
-                    if (configurandoS2) {
-                      seleccionarProfesionalS2(p, false);
+                    if (configurandoExtra) {
+                      seleccionarProfesionalExtra(p, false);
                     } else {
                       setProfesionalSel(p); setCualquiera(false); setPaso(3);
                     }
@@ -751,7 +753,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
 
           <button
             onClick={() => {
-              if (!configurandoS2) {
+              if (!configurandoExtra) {
                 setSlotSel(null); setSlots([]); setFecha(""); setCualquieraProfMap({});
               }
               setPaso(tieneVariantes ? 1 : 0);
@@ -849,7 +851,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
                     whileHover={slot.disponible ? cardHover : {}}
                     whileTap={slot.disponible ? cardTap : {}}
                     onClick={() => {
-                      if (slotSel?.hora_inicio !== slot.hora_inicio) quitarServicio2();
+                      if (slotSel?.hora_inicio !== slot.hora_inicio) setServiciosExtra([]);
                       setSlotSel(slot);
                     }}
                     className={`text-sm py-2.5 rounded-xl border transition-colors ${
@@ -867,31 +869,34 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
             </div>
           )}
 
-          {/* Añadir segundo servicio */}
-          {slotSel && !servicio2 && (
+          {/* Tags de servicios extra añadidos */}
+          {slotSel && serviciosExtra.map((ex, idx) => {
+            const prof = exProfAsignado(ex, profesionales);
+            return (
+              <div key={idx} className="mt-2 bg-[#f7e8ed] rounded-xl px-3 py-2.5 flex items-center justify-between">
+                <div className="text-sm">
+                  <span className="font-medium text-[#1a1412]">+ {ex.servicio.nombre}</span>
+                  {ex.variante && <span className="text-[#6b6360]"> — {ex.variante.nombre}</span>}
+                  <span className="text-[#6b6360]"> · {ex.horaInicio}</span>
+                  {prof && <span className="text-[#6b6360]"> con {prof.nombre}</span>}
+                </div>
+                <button onClick={() => quitarExtra(idx)} className="text-[#6b6360] hover:text-[#C4728A] ml-2 flex-shrink-0">
+                  <X size={14} />
+                </button>
+              </div>
+            );
+          })}
+
+          {/* Botón añadir servicio extra (máx 3 extras = 4 servicios total) */}
+          {slotSel && serviciosExtra.length < 3 && (
             <motion.button
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              onClick={iniciarS2}
-              className="mt-4 w-full flex items-center justify-center gap-2 border border-dashed border-[#C4728A] text-[#C4728A] rounded-xl py-2.5 text-sm hover:bg-[#f7e8ed] transition-colors"
+              onClick={iniciarExtra}
+              className="mt-3 w-full flex items-center justify-center gap-2 border border-dashed border-[#C4728A] text-[#C4728A] rounded-xl py-2.5 text-sm hover:bg-[#f7e8ed] transition-colors"
             >
-              <Plus size={15} /> Añadir otro servicio a las {slotSel.hora_fin}
+              <Plus size={15} /> Añadir otro servicio a las {horaInicioSiguiente()}
             </motion.button>
-          )}
-
-          {/* Tag segundo servicio añadido */}
-          {slotSel && servicio2 && (
-            <div className="mt-4 bg-[#f7e8ed] rounded-xl px-3 py-2.5 flex items-center justify-between">
-              <div className="text-sm">
-                <span className="font-medium text-[#1a1412]">+ {servicio2.nombre}</span>
-                {variante2 && <span className="text-[#6b6360]"> — {variante2.nombre}</span>}
-                <span className="text-[#6b6360]"> · {slotSel.hora_fin}</span>
-                {prof2Asignado && <span className="text-[#6b6360]"> con {prof2Asignado.nombre}</span>}
-              </div>
-              <button onClick={quitarServicio2} className="text-[#6b6360] hover:text-[#C4728A] ml-2 flex-shrink-0">
-                <X size={14} />
-              </button>
-            </div>
           )}
 
           <div className="flex gap-3 mt-6">
@@ -901,7 +906,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
                 setSlotSel(null);
                 setSlots([]);
                 setFecha("");
-                quitarServicio2();
+                setServiciosExtra([]);
               }}
               className="flex-1 border border-[#e8c5ce] text-[#6b6360] py-2.5 rounded-xl text-sm hover:bg-[#f4f1ef] transition-colors"
             >
@@ -928,12 +933,12 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
           {/* Resumen */}
           <div className="bg-[#1a1412] text-white rounded-2xl p-5 mb-6">
             <p className="text-[#C4728A] font-semibold mb-3">
-              {servicio2 ? "Resumen de tus citas" : "Resumen de tu cita"}
+              {serviciosExtra.length > 0 ? "Resumen de tus citas" : "Resumen de tu cita"}
             </p>
             <div className="space-y-2 text-sm">
 
               {/* Servicio 1 */}
-              {servicio2 && (
+              {serviciosExtra.length > 0 && (
                 <p className="text-[#C4728A] text-xs font-semibold uppercase tracking-wide">1.er servicio</p>
               )}
               <div className="flex justify-between">
@@ -964,58 +969,60 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
                 <span className="text-[#6b6360]">Duración</span>
                 <span className="font-medium">{duracionDisplay} min</span>
               </div>
-              <div className={`flex justify-between ${!servicio2 ? "border-t border-[#ffffff10] pt-2 mt-2" : ""}`}>
+              <div className={`flex justify-between ${serviciosExtra.length === 0 ? "border-t border-[#ffffff10] pt-2 mt-2" : ""}`}>
                 <span className="text-[#6b6360]">Precio</span>
-                <span className={`font-bold ${!servicio2 ? "text-[#C4728A] text-lg" : "text-white"}`}>{precioDisplay}</span>
+                <span className={`font-bold ${serviciosExtra.length === 0 ? "text-[#C4728A] text-lg" : "text-white"}`}>{precioDisplay}</span>
               </div>
 
-              {/* Servicio 2 */}
-              {servicio2 && (
-                <>
-                  <div className="border-t border-[#ffffff15] my-2" />
-                  <p className="text-[#C4728A] text-xs font-semibold uppercase tracking-wide">2.° servicio</p>
-                  <div className="flex justify-between">
-                    <span className="text-[#6b6360]">Servicio</span>
-                    <span className="font-medium">{servicio2.nombre}</span>
-                  </div>
-                  {variante2 && (
+              {/* Servicios extra */}
+              {serviciosExtra.map((ex, idx) => {
+                const prof = exProfAsignado(ex, profesionales);
+                const isLast = idx === serviciosExtra.length - 1;
+                const precio1 = Number(varianteSel?.precio ?? servicioSel.precio);
+                const totalAcumulado = precio1 + serviciosExtra.reduce((sum, e) => sum + exPrecio(e), 0);
+                return (
+                  <div key={idx}>
+                    <div className="border-t border-[#ffffff15] my-2" />
+                    <p className="text-[#C4728A] text-xs font-semibold uppercase tracking-wide">{idx + 2}.° servicio</p>
                     <div className="flex justify-between">
-                      <span className="text-[#6b6360]">Tamaño</span>
-                      <span className="font-medium">{variante2.nombre}</span>
+                      <span className="text-[#6b6360]">Servicio</span>
+                      <span className="font-medium">{ex.servicio.nombre}</span>
                     </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-[#6b6360]">Profesional</span>
-                    <span className="font-medium">
-                      {prof2Asignado?.nombre ?? (cualquiera2 ? "Sin preferencia" : "—")}
-                    </span>
+                    {ex.variante && (
+                      <div className="flex justify-between">
+                        <span className="text-[#6b6360]">Tamaño</span>
+                        <span className="font-medium">{ex.variante.nombre}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-[#6b6360]">Profesional</span>
+                      <span className="font-medium">
+                        {prof?.nombre ?? (ex.esCualquiera ? "Sin preferencia" : "—")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#6b6360]">Hora</span>
+                      <span className="font-medium">{ex.horaInicio} – {ex.horaFin}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#6b6360]">Duración</span>
+                      <span className="font-medium">{exDur(ex)} min</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#6b6360]">Precio</span>
+                      <span className="font-medium">{exPrecioDisplay(ex)}</span>
+                    </div>
+                    {isLast && (
+                      <div className="flex justify-between border-t border-[#ffffff10] pt-2 mt-2">
+                        <span className="text-[#6b6360]">Total</span>
+                        <span className="font-bold text-[#C4728A] text-lg">
+                          {totalAcumulado.toFixed(2)} €
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#6b6360]">Hora</span>
-                    <span className="font-medium">
-                      {slotSel.hora_fin} – {(() => {
-                        const base = new Date();
-                        const ini = parse(slotSel.hora_fin, "HH:mm", base);
-                        return format(addMinutes(ini, dur2Display), "HH:mm");
-                      })()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#6b6360]">Duración</span>
-                    <span className="font-medium">{dur2Display} min</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#6b6360]">Precio</span>
-                    <span className="font-medium">{precio2Display}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-[#ffffff10] pt-2 mt-2">
-                    <span className="text-[#6b6360]">Total</span>
-                    <span className="font-bold text-[#C4728A] text-lg">
-                      {(Number(varianteSel?.precio ?? servicioSel.precio) + Number(variante2?.precio ?? servicio2.precio)).toFixed(2)} €
-                    </span>
-                  </div>
-                </>
-              )}
+                );
+              })}
             </div>
           </div>
 
