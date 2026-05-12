@@ -56,6 +56,30 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
   const [horaFinManual, setHoraFinManual] = useState("");
   const [slotSeleccionado, setSlotSeleccionado] = useState<SlotDisponible | null>(null);
 
+  // Reset de estado cada vez que el modal se abre
+  useEffect(() => {
+    if (!open) return;
+    setClienteNombre("");
+    setClienteTelefono("");
+    setClienteEmail("");
+    setSugerencias([]);
+    setMostrarSug(false);
+    setServicioId("");
+    setVarianteId("");
+    setBusquedaServicio("");
+    setProfesionalId(profesionalPreseleccionada?.id ?? "");
+    setFecha(format(fechaInicial, "yyyy-MM-dd"));
+    setHoraManual(false);
+    setHoraInicioManual(
+      format(fechaInicial, "HH:mm") !== "00:00" ? format(fechaInicial, "HH:mm") : "10:00"
+    );
+    setHoraFinManual("");
+    setSlotSeleccionado(null);
+    setSlots([]);
+    setVariantes([]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   // Fetch servicios
   useEffect(() => {
     fetch("/api/servicios")

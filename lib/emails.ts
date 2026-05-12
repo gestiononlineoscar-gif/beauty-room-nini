@@ -241,6 +241,7 @@ interface DatosReporte {
   fecha: string;
   reservas: LineaReporte[];
   totalIngresos: number;
+  to?: string;
 }
 
 export async function enviarReporteDiario(datos: DatosReporte) {
@@ -327,7 +328,7 @@ export async function enviarReporteDiario(datos: DatosReporte) {
 
   const result = await resend.emails.send({
     from: "Beauty Room Nini <citas@beautyroomnini.es>",
-    to: "beautyroom.nini@gmail.com",
+    to: datos.to ?? "beautyroom.nini@gmail.com",
     subject: `📊 Reporte del día — ${fechaFormateada}`,
     html,
   });

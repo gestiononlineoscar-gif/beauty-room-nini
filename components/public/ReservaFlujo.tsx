@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/lib/supabase";
 import { format, parseISO, isBefore, startOfDay, getDay, addMinutes, parse } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Servicio, Profesional, ProfesionalServicio, SlotDisponible, ServicioVariante } from "@/types";
@@ -20,6 +19,10 @@ const cardHover = { scale: 1.02 } as const;
 const cardTap   = { scale: 0.98 } as const;
 
 const ORDINAL_ES = ["segundo", "tercer", "cuarto"] as const;
+
+function normalize(s: string) {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
 
 type ExtraServicio = {
   servicio: Servicio;
@@ -153,7 +156,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
   }, [servicioSel, profesionales, profesionalServicios]);
 
   const serviciosFiltrados = servicios.filter((s) => {
-    const porBusqueda = !busqueda || s.nombre.toLowerCase().includes(busqueda.toLowerCase());
+    const porBusqueda = !busqueda || normalize(s.nombre).includes(normalize(busqueda));
     const porCategoria = !categoriaFiltro || s.categoria === categoriaFiltro;
     return porBusqueda && porCategoria;
   });
@@ -367,8 +370,6 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       } catch { /* si falla la verificación, continuamos */ }
     }
 
-    const supabase = createClient();
-
     // Buscar o crear cliente vía API (service role key, evita bloqueo RLS)
     let clienteId: string;
     const clienteRes = await fetch("/api/clientes", {
@@ -389,46 +390,46 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     }
     clienteId = clienteData.id;
 
-    // Límite de reservas diarias
-    const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
-    const { count } = await supabase
-      .from("reservas")
-      .select("id", { count: "exact", head: true })
-      .eq("cliente_id", clienteId)
-      .eq("fecha", hoy)
-      .neq("estado", "cancelada");
-    if ((count ?? 0) >= 3) {
-      setEnviando(false);
-      alert("Has alcanzado el máximo de reservas para hoy. Llámanos para más información.");
-      return;
-    }
-
     const profId = cualquiera ? (cualquieraProfMap[slotSel.hora_inicio] ?? profesionalesDelServicio[0]?.id) : profesionalSel?.id;
     const duracion = varianteSel?.duracion_min ?? servicioSel.duracion_min;
     const precio = Number(varianteSel?.precio ?? servicioSel.precio);
 
-    // Insertar reserva S1
-    await supabase.from("reservas").insert({
-      cliente_id: clienteId,
-      profesional_id: profId,
-      servicio_id: servicioSel.id,
-      variante_id: varianteSel?.id ?? null,
-      fecha,
-      hora_inicio: slotSel.hora_inicio + ":00",
-      hora_fin: slotSel.hora_fin + ":00",
-      estado: "confirmada",
+    // Insertar reserva S1 vía API (adminClient, evita bloqueo RLS)
+    const r1Res = await fetch("/api/reservas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cliente_id: clienteId,
+        profesional_id: profId,
+        servicio_id: servicioSel.id,
+        variante_id: varianteSel?.id ?? null,
+        fecha,
+        hora_inicio: slotSel.hora_inicio + ":00",
+        hora_fin: slotSel.hora_fin + ":00",
+      }),
     });
+
+    if (!r1Res.ok) {
+      const errData = await r1Res.json().catch(() => ({}));
+      setEnviando(false);
+      if (errData.error === "limite_diario") {
+        alert("Has alcanzado el máximo de reservas para este día. Llámanos para más información.");
+      } else {
+        alert("Error al guardar la reserva. Por favor inténtalo de nuevo.");
+      }
+      return;
+    }
 
     // Insertar reservas extra (S2, S3, S4)
     for (const ex of serviciosExtra) {
       const profIdEx = ex.profIdAsignado ?? ex.profesional?.id ?? profId;
 
       try {
-        const res = await fetch(
+        const dispRes = await fetch(
           `/api/disponible?profesional_id=${profIdEx}&fecha=${fecha}&hora_inicio=${ex.horaInicio}&duracion_min=${exDur(ex)}`
         );
-        const data = await res.json();
-        if (!data.disponible) {
+        const dispData = await dispRes.json();
+        if (!dispData.disponible) {
           setEnviando(false);
           alert(`Lo sentimos, el servicio "${ex.servicio.nombre}" ya no está disponible a las ${ex.horaInicio}. Los servicios anteriores ya fueron guardados. Por favor contacta con el salón.`);
           router.push("/reservar/confirmacion");
@@ -436,16 +437,26 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         }
       } catch { /* continuar */ }
 
-      await supabase.from("reservas").insert({
-        cliente_id: clienteId,
-        profesional_id: profIdEx,
-        servicio_id: ex.servicio.id,
-        variante_id: ex.variante?.id ?? null,
-        fecha,
-        hora_inicio: ex.horaInicio + ":00",
-        hora_fin: ex.horaFin + ":00",
-        estado: "confirmada",
+      const exRes = await fetch("/api/reservas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cliente_id: clienteId,
+          profesional_id: profIdEx,
+          servicio_id: ex.servicio.id,
+          variante_id: ex.variante?.id ?? null,
+          fecha,
+          hora_inicio: ex.horaInicio + ":00",
+          hora_fin: ex.horaFin + ":00",
+        }),
       });
+
+      if (!exRes.ok) {
+        setEnviando(false);
+        alert(`Error al guardar el servicio "${ex.servicio.nombre}". Los servicios anteriores ya fueron guardados. Por favor contacta con el salón.`);
+        router.push("/reservar/confirmacion");
+        return;
+      }
     }
 
     // Email de confirmación
