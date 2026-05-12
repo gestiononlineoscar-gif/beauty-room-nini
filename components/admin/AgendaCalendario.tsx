@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Calendar, dateFnsLocalizer, View } from "react-big-calendar";
 import {
   format, parse, startOfWeek, endOfWeek, startOfMonth,
-  endOfMonth, startOfDay, endOfDay, getDay
+  endOfMonth, startOfDay, endOfDay, getDay, addDays
 } from "date-fns";
 import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -33,6 +33,14 @@ interface AgendaEvent {
   estado: string;
   tipo: "reserva" | "bloqueo";
 }
+
+type HorarioRow = {
+  profesional_id: string;
+  dia_semana: number;
+  trabaja: boolean;
+  hora_inicio: string;
+  hora_fin: string;
+};
 
 interface Props {
   profesionales: Profesional[];
@@ -92,6 +100,22 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
   const [slotSeleccionado, setSlotSeleccionado] = useState<{ start: Date; end: Date; resourceId?: string | number } | null>(null);
   const [bloqueoModalOpen, setBloqueoModalOpen] = useState(false);
   const [profFiltro, setProfFiltro] = useState<Set<string>>(new Set());
+  const [horarios, setHorarios] = useState<Record<string, HorarioRow[]>>({});
+
+  useEffect(() => {
+    fetch("/api/horario-profesional?todos=true")
+      .then((r) => r.json())
+      .then((data: HorarioRow[]) => {
+        if (!Array.isArray(data)) return;
+        const grouped: Record<string, HorarioRow[]> = {};
+        for (const row of data) {
+          if (!grouped[row.profesional_id]) grouped[row.profesional_id] = [];
+          grouped[row.profesional_id].push(row);
+        }
+        setHorarios(grouped);
+      })
+      .catch(() => {});
+  }, []);
 
   const colorPorProfesional = useMemo(() => {
     const mapa: Record<string, string> = {};
@@ -107,6 +131,9 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
     } else if (vista === "month") {
       desde = startOfMonth(fecha);
       hasta = endOfMonth(fecha);
+    } else if (vista === "agenda") {
+      desde = startOfDay(fecha);
+      hasta = addDays(fecha, 30);
     } else {
       desde = startOfDay(fecha);
       hasta = endOfDay(fecha);
@@ -205,6 +232,32 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
     }
     return { style };
   }, []);
+
+  const slotPropGetter = useCallback((date: Date, resourceId?: string | number) => {
+    // Determinar qué profesional corresponde a este slot
+    let profId: string | null = null;
+    if (resourceId) {
+      profId = String(resourceId);
+    } else if (profFiltro.size === 1) {
+      profId = [...profFiltro][0];
+    }
+
+    if (!profId || !horarios[profId]) return {};
+
+    const diaSemana = date.getDay();
+    const h = horarios[profId].find((r) => r.dia_semana === diaSemana);
+
+    if (!h?.trabaja) {
+      return { style: { backgroundColor: "#f3f4f6" } };
+    }
+
+    const horaStr = format(date, "HH:mm:ss");
+    if (horaStr < h.hora_inicio || horaStr >= h.hora_fin) {
+      return { style: { backgroundColor: "#f3f4f6" } };
+    }
+
+    return {};
+  }, [horarios, profFiltro]);
 
   function handleSelectEvent(event: AgendaEvent) {
     if (event.tipo === "bloqueo") {
@@ -347,6 +400,7 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
             endAccessor="end"
             titleAccessor="title"
             eventPropGetter={eventStyleGetter}
+            slotPropGetter={slotPropGetter}
             onSelectEvent={handleSelectEvent}
             onSelectSlot={(slotInfo) =>
               setSlotSeleccionado({ start: slotInfo.start, end: slotInfo.end, resourceId: slotInfo.resourceId })

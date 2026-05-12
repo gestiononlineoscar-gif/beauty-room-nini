@@ -43,11 +43,17 @@ export function BloqueoModal({
     const res = await fetch("/api/bloqueos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profesional_id: profesionalId, fecha, hora_inicio: horaInicio, hora_fin: horaFin, motivo }),
+      body: JSON.stringify({
+        profesional_id: profesionalId,
+        fecha,
+        hora_inicio: horaInicio + ":00",
+        hora_fin: horaFin + ":00",
+        motivo,
+      }),
     });
     const data = await res.json();
     if (!res.ok) {
-      toast.error("Error al crear el bloqueo");
+      toast.error(`Error: ${data?.error ?? "No se pudo crear el bloqueo"}`);
     } else {
       toast.success("Horario bloqueado");
       onCreado(data);

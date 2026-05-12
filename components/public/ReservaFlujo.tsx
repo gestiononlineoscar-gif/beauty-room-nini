@@ -369,45 +369,38 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
 
     const supabase = createClient();
 
+    // Buscar o crear cliente vía API (service role key, evita bloqueo RLS)
     let clienteId: string;
-    const { data: existente } = await supabase
-      .from("clientes")
-      .select("id, bloqueado")
-      .eq("telefono", telefono)
-      .maybeSingle();
-
-    if (existente?.bloqueado) {
+    const clienteRes = await fetch("/api/clientes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, telefono, email }),
+    });
+    if (!clienteRes.ok) {
+      setEnviando(false);
+      alert("Error al registrar tus datos. Por favor inténtalo de nuevo.");
+      return;
+    }
+    const clienteData = await clienteRes.json();
+    if (clienteData.bloqueado) {
       setEnviando(false);
       alert("No es posible realizar reservas online desde esta cuenta. Por favor contacta con el salón.");
       return;
     }
+    clienteId = clienteData.id;
 
-    if (existente) {
-      clienteId = existente.id;
-      const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
-      const { count } = await supabase
-        .from("reservas")
-        .select("id", { count: "exact", head: true })
-        .eq("cliente_id", clienteId)
-        .eq("fecha", hoy)
-        .neq("estado", "cancelada");
-      if ((count ?? 0) >= 3) {
-        setEnviando(false);
-        alert("Has alcanzado el máximo de reservas para hoy. Llámanos para más información.");
-        return;
-      }
-    } else {
-      const { data: nuevo, error: errorCliente } = await supabase
-        .from("clientes")
-        .insert({ nombre, telefono, email })
-        .select()
-        .single();
-      if (errorCliente || !nuevo?.id) {
-        setEnviando(false);
-        alert("Error al registrar tus datos. Por favor inténtalo de nuevo.");
-        return;
-      }
-      clienteId = nuevo.id;
+    // Límite de reservas diarias
+    const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+    const { count } = await supabase
+      .from("reservas")
+      .select("id", { count: "exact", head: true })
+      .eq("cliente_id", clienteId)
+      .eq("fecha", hoy)
+      .neq("estado", "cancelada");
+    if ((count ?? 0) >= 3) {
+      setEnviando(false);
+      alert("Has alcanzado el máximo de reservas para hoy. Llámanos para más información.");
+      return;
     }
 
     const profId = cualquiera ? (cualquieraProfMap[slotSel.hora_inicio] ?? profesionalesDelServicio[0]?.id) : profesionalSel?.id;

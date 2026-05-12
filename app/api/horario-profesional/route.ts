@@ -12,14 +12,14 @@ function adminClient() {
 
 export async function GET(req: NextRequest) {
   const profesionalId = req.nextUrl.searchParams.get("profesional_id");
-  if (!profesionalId) return NextResponse.json({ error: "Falta profesional_id" }, { status: 400 });
+  const todos = req.nextUrl.searchParams.get("todos");
 
-  const { data, error } = await adminClient()
-    .from("horario_profesional")
-    .select("*")
-    .eq("profesional_id", profesionalId)
-    .order("dia_semana");
+  if (!profesionalId && !todos) return NextResponse.json({ error: "Falta profesional_id" }, { status: 400 });
 
+  let query = adminClient().from("horario_profesional").select("*").order("dia_semana");
+  if (profesionalId) query = query.eq("profesional_id", profesionalId);
+
+  const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }

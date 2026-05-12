@@ -168,19 +168,13 @@ export function ReservasLista({ reservasIniciales, profesionales }: Props) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1 flex-wrap">
-                        {r.estado === "pendiente" && (
-                          <button onClick={() => cambiarEstado(r.id, "confirmada")}
-                            className="text-xs bg-[#4a9b6f] text-white px-2 py-1 rounded-lg hover:bg-[#3a8060] transition-colors">
-                            Confirmar
+                        {r.estado !== "cancelada" && r.estado !== "completada" && r.estado !== "no_presentada" && (
+                          <button onClick={() => cambiarEstado(r.id, "no_presentada")}
+                            className="text-xs bg-orange-500 text-white px-2 py-1 rounded-lg hover:bg-orange-600 transition-colors">
+                            Inasistencia
                           </button>
                         )}
-                        {(r.estado === "pendiente" || r.estado === "confirmada") && (
-                          <button onClick={() => cambiarEstado(r.id, "completada")}
-                            className="text-xs bg-[#2B5BA8] text-white px-2 py-1 rounded-lg hover:bg-[#1e4a90] transition-colors">
-                            Completar
-                          </button>
-                        )}
-                        {r.estado !== "cancelada" && r.estado !== "completada" && (
+                        {r.estado !== "cancelada" && r.estado !== "completada" && r.estado !== "no_presentada" && (
                           <button onClick={() => cambiarEstado(r.id, "cancelada")}
                             className="text-xs border border-red-200 text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
                             Cancelar

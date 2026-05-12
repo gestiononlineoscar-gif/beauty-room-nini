@@ -1,0 +1,169 @@
+Cliente	Miembro del equipo	Estado	Fecha programada	Fecha de cancelación	Categoría	Servicio	Duración (min)	Franja horaria cita
+Pilar Bernal	Shirley Avalos	New	01/08/26 11:00:00		Pedicura	Pedicura exprés con semipermanente	45min	11:00:00-11:45:00
+Noelia Belenguer Barrera	Nana Arabuli	New	20/07/26 17:30:00		Manicura	Decoración de uñas	20min	17:30:00-17:50:00
+Noelia Belenguer Barrera	Nana Arabuli	New	20/07/26 16:45:00		Manicura	Semipermanente completo	45min	16:45:00-17:30:00
+Cristina Heras	Nana Arabuli	New	17/07/26 20:15:00		Manicura	Semipermanente exprés	40min	20:15:00-20:55:00
+Patricia Pelaez	Viviana Hernández	New	17/07/26 18:45:00		Manicura	Semipermanente completo	45min	18:45:00-19:30:00
+Lorena Martín	Nana Arabuli	New	17/07/26 18:45:00		Manicura	Retirada de uñas acrílicas con torno	30min	18:45:00-19:15:00
+Lorena Martín	Nana Arabuli	New	17/07/26 18:00:00		Manicura	Semipermanente completo	45min	18:00:00-18:45:00
+Jose Davila	Viviana Hernández	New	17/07/26 18:00:00		Manicura	Semipermanente completo	45min	18:00:00-18:45:00
+Lorena Martín	Viviana Hernández	New	16/07/26 19:15:00		Pedicura	Pedicura completa con semipermanente	1h 0min	19:15:00-20:15:00
+Lorena Martín	Nana Arabuli	New	16/07/26 18:30:00		Manicura	Semipermanente completo	45min	18:30:00-19:15:00
+Toñi	Nana Arabuli	New	16/07/26 13:00:00		Manicura	Relleno/Refuerzo con base fibra	1h 0min	13:00:00-14:00:00
+Lorena Martín	Delcy Chaves	New	16/07/26 11:00:00		Pedicura	Pedicura completa con semipermanente	1h 0min	11:00:00-12:00:00
+Lorena Martín	Shirley Avalos	New	16/07/26 10:00:00		Manicura	Relleno/Refuerzo con base fibra	1h 0min	10:00:00-11:00:00
+Carmen Campoy	Nana Arabuli	New	15/07/26 19:15:00		Manicura	Decoración de uñas	20min	19:15:00-19:35:00
+Carmen Campoy	Nana Arabuli	New	15/07/26 18:30:00		Manicura	Semipermanente completo	45min	18:30:00-19:15:00
+Lorena Martín	Delcy Chaves	Cancelado	09/07/26 16:00:00	06/05/26 21:00:22	Estética	Lifting y tinte de pestañas	1h 20min	16:00:00-17:20:00
+Flor Mirabal	Delcy Chaves	New	29/06/26 16:35:00		Manicura	Relleno/Refuerzo con acrigel o poligel	1h 15min	16:35:00-17:50:00
+Flor Mirabal	Delcy Chaves	New	29/06/26 16:15:00		Manicura	Decoración de uñas	20min	16:15:00-16:35:00
+Katia	Diana Enciso	New	29/06/26 11:00:00		Peluquería	Tinte completo	2h 0min	11:00:00-13:00:00
+Aurora Cortizo	Viviana Hernández	New	22/06/26 16:30:00		Manicura	Relleno/Refuerzo con base fibra	1h 30min	16:30:00-18:00:00
+Guadalupe MARTIN DOMENECH	Delcy Chaves	New	22/06/26 16:15:00		Pedicura	Pedicura completa con semipermanente	1h 0min	16:15:00-17:15:00
+Guadalupe MARTIN DOMENECH	Delcy Chaves	New	22/06/26 15:30:00		Manicura	Semipermanente completo	45min	15:30:00-16:15:00
+Aurora Cortizo	Viviana Hernández	New	22/06/26 15:00:00		Pedicura	Pedicura completa con semipermanente	1h 30min	15:00:00-16:30:00
+Aurora Cortizo	Delcy Chaves	New	22/06/26 11:00:00		Pedicura	Pedicura completa con semipermanente	2h 0min	11:00:00-13:00:00
+Aurora Cortizo	Delcy Chaves	New	22/06/26 10:00:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	10:00:00-11:00:00
+Cristina Heras	Nana Arabuli	New	19/06/26 20:15:00		Manicura	Semipermanente exprés	40min	20:15:00-20:55:00
+Vero	Nana Arabuli	New	19/06/26 19:15:00		Manicura	Relleno/Refuerzo con base fibra	1h 0min	19:15:00-20:15:00
+carolina reynoso	Diana Enciso	New	19/06/26 13:30:00		Peluquería	Hilos de luz	15min	13:30:00-13:45:00
+Estefanía Reynoso	Delcy Chaves	New	19/06/26 12:45:00		Manicura	Uñas acrílicas con tips	1h 20min	12:45:00-14:05:00
+carolina reynoso	Diana Enciso	New	19/06/26 12:30:00		Pedicura	Pedicura completa con semipermanente	1h 0min	12:30:00-13:30:00
+carolina reynoso	Diana Enciso	New	19/06/26 11:45:00		Manicura	Semipermanente completo	45min	11:45:00-12:30:00
+Estefanía Reynoso	Delcy Chaves	New	19/06/26 11:45:00		Pedicura	Pedicura completa con semipermanente	1h 0min	11:45:00-12:45:00
+Noelia Belenguer Barrera	Nana Arabuli	New	18/06/26 17:15:00		Manicura	Decoración de uñas	20min	17:15:00-17:35:00
+Noelia Belenguer Barrera	Nana Arabuli	New	18/06/26 16:30:00		Manicura	Semipermanente completo	45min	16:30:00-17:15:00
+Toñi	Nana Arabuli	New	17/06/26 17:30:00		Manicura	Relleno/Refuerzo con base fibra	1h 0min	17:30:00-18:30:00
+Isabel recino	Delcy Chaves	New	16/06/26 11:30:00		Manicura	Decoración de uñas	20min	11:30:00-11:50:00
+Isabel recino	Delcy Chaves	New	16/06/26 10:30:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	10:30:00-11:30:00
+Carmen Campoy	Nana Arabuli	New	15/06/26 19:15:00		Manicura	Decoración de uñas	20min	19:15:00-19:35:00
+Carmen Campoy	Nana Arabuli	New	15/06/26 18:30:00		Manicura	Semipermanente completo	45min	18:30:00-19:15:00
+Caty	Delcy Chaves	New	06/06/26 12:00:00		Manicura	Decoración de uñas	20min	12:00:00-12:20:00
+Caty	Delcy Chaves	New	06/06/26 11:00:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	11:00:00-12:00:00
+Sin cita	Delcy Chaves	New	06/06/26 10:00:00		Manicura	Semipermanente completo	45min	10:00:00-10:45:00
+Patricia Pelaez	Nana Arabuli	New	05/06/26 16:00:00		Manicura	Semipermanente completo	45min	16:00:00-16:45:00
+Amaya	Delcy Chaves	New	01/06/26 11:00:00		Manicura	Decoración de uñas	20min	11:00:00-11:20:00
+Amaya	Delcy Chaves	New	01/06/26 10:00:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	10:00:00-11:00:00
+Flor Mirabal	Delcy Chaves	New	30/05/26 12:20:00		Manicura	Relleno/Refuerzo con acrigel o poligel	1h 15min	12:20:00-13:35:00
+MARIA AZUCENA García PEREIRA	Shirley Avalos	New	30/05/26 12:00:00		Manicura	Semipermanente completo	45min	12:00:00-12:45:00
+Flor Mirabal	Delcy Chaves	New	30/05/26 12:00:00		Manicura	Decoración de uñas	20min	12:00:00-12:20:00
+Nayara + Tamara	Delcy Chaves	New	30/05/26 10:30:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	10:30:00-11:30:00
+Cristina Heras	Nana Arabuli	New	29/05/26 20:15:00		Manicura	Semipermanente exprés	40min	20:15:00-20:55:00
+Vero	Nana Arabuli	New	29/05/26 19:15:00		Manicura	Relleno/Refuerzo con base fibra	1h 0min	19:15:00-20:15:00
+Conchi Diaz	Nana Arabuli	New	29/05/26 17:45:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	17:45:00-18:45:00
+Flor Mirabal	Delcy Chaves	New	29/05/26 16:35:00		Manicura	Relleno/Refuerzo con acrigel o poligel	1h 15min	16:35:00-17:50:00
+Flor Mirabal	Delcy Chaves	New	29/05/26 16:15:00		Manicura	Decoración de uñas	20min	16:15:00-16:35:00
+Magdalena Carmen	Diana Enciso	Cancelado	29/05/26 11:40:00	05/05/26 12:59:48	Depilación Cera	Depilación de cejas con cera (Solo limpieza)	15min	11:40:00-11:55:00
+Magdalena Carmen	Shirley Avalos	Cancelado	29/05/26 11:00:00	05/05/26 12:59:48	Manicura	Semipermanente exprés	40min	11:00:00-11:40:00
+Natia	Nana Arabuli	New	28/05/26 19:20:00		Manicura	Semipermanente completo	1h 0min	19:20:00-20:20:00
+Magdalena Carmen	Shirley Avalos	New	28/05/26 11:00:00		Manicura	Semipermanente exprés	1h 0min	11:00:00-12:00:00
+Carmen Campoy	Nana Arabuli	New	27/05/26 19:45:00		Manicura	Decoración de uñas	20min	19:45:00-20:05:00
+Carmen Campoy	Nana Arabuli	New	27/05/26 19:00:00		Manicura	Semipermanente completo	45min	19:00:00-19:45:00
+Ester Lara	Nana Arabuli	New	27/05/26 18:45:00		Manicura	Decoración de uñas	20min	18:45:00-19:05:00
+Ester Lara	Nana Arabuli	New	27/05/26 17:45:00		Manicura	Relleno/Refuerzo con base fibra	1h 0min	17:45:00-18:45:00
+Noelia Belenguer Barrera	Nana Arabuli	New	27/05/26 17:15:00		Manicura	Decoración de uñas	20min	17:15:00-17:35:00
+Mariona Artigas	Delcy Chaves	New	27/05/26 17:15:00		Manicura	Semipermanente completo	45min	17:15:00-18:00:00
+Noelia Belenguer Barrera	Nana Arabuli	New	27/05/26 16:30:00		Manicura	Semipermanente completo	45min	16:30:00-17:15:00
+Isabel recino	Delcy Chaves	New	26/05/26 11:30:00		Manicura	Decoración de uñas	20min	11:30:00-11:50:00
+Isabel recino	Delcy Chaves	New	26/05/26 10:30:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	10:30:00-11:30:00
+Aurora Cortizo	Nana Arabuli	New	25/05/26 17:50:00		Manicura	Relleno/Refuerzo con base fibra	1h 30min	17:50:00-19:20:00
+Aurora Cortizo	Delcy Chaves	New	25/05/26 17:00:00		Pedicura	Pedicura completa con semipermanente	1h 0min	17:00:00-18:00:00
+Aurora Cortizo	Viviana Hernández	New	25/05/26 16:30:00		Pedicura	Pedicura completa con semipermanente	1h 20min	16:30:00-17:50:00
+Aurora Cortizo	Delcy Chaves	New	25/05/26 15:00:00		Manicura	Relleno/Refuerzo con acrílico	2h 0min	15:00:00-17:00:00
+Pilar Perez	Shirley Avalos	New	23/05/26 12:00:00		Manicura	Semipermanente exprés	40min	12:00:00-12:40:00
+Yolanda Murcia	Shirley Avalos	New	23/05/26 10:05:00		Depilación Hilo	Depilación de cejas con hilo	30min	10:05:00-10:35:00
+Sole Díaz	Delcy Chaves	New	22/05/26 17:00:00		Manicura	Semipermanente completo	45min	17:00:00-17:45:00
+Marta Navarro	Nana Arabuli	New	22/05/26 14:40:00		Manicura	Decoración de uñas	20min	14:40:00-15:00:00
+Marta Navarro	Nana Arabuli	New	22/05/26 14:00:00		Manicura	Semipermanente exprés	40min	14:00:00-14:40:00
+Blanca Beltran	Shirley Avalos	New	22/05/26 13:00:00		Depilación Cera	Depilación de labio superior con cera	10min	13:00:00-13:10:00
+Blanca Beltran	Shirley Avalos	New	22/05/26 12:30:00		Depilación Hilo	Depilación de cejas con hilo	30min	12:30:00-13:00:00
+Marta Navarro	Nini Room	New	22/05/26 12:00:00		Estética	Extensiones de pestañas pelo a pelo	2h 0min	12:00:00-14:00:00
+Blanca Beltran	Shirley Avalos	New	22/05/26 11:45:00		Manicura	Semipermanente completo	45min	11:45:00-12:30:00
+Ana Oke	Viviana Hernández	New	21/05/26 19:00:00		Pedicura	Pedicura exprés con semipermanente	45min	19:00:00-19:45:00
+Ana Oke	Viviana Hernández	New	21/05/26 18:00:00		Manicura	Relleno/Refuerzo con base fibra	1h 0min	18:00:00-19:00:00
+María del valle	Delcy Chaves	New	21/05/26 12:00:00		Manicura	Semipermanente completo	45min	12:00:00-12:45:00
+Melanie	Shirley Avalos	New	21/05/26 11:00:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	11:00:00-12:00:00
+Toñi	Nana Arabuli	New	20/05/26 17:30:00		Manicura	Relleno/Refuerzo con base fibra	1h 0min	17:30:00-18:30:00
+Ruth	Shirley Avalos	Cancelado	20/05/26 11:45:00	06/05/26 14:30:21	Pedicura	Pedicura completa con semipermanente	1h 0min	11:45:00-12:45:00
+Cristina Heras	Nana Arabuli	New	19/05/26 19:15:00		Manicura	Semipermanente completo	45min	19:15:00-20:00:00
+Raquel Rodríguez Sánchez	Diana Enciso	New	19/05/26 14:00:00		Peluquería	Lavado y peinado	1h 0min	14:00:00-15:00:00
+Marta Bonilla	Nana Arabuli	New	19/05/26 13:40:00		Manicura	Decoración de uñas	20min	13:40:00-14:00:00
+Nuria Felis Perez	Delcy Chaves	New	19/05/26 13:10:00		Pedicura	Pedicura completa con semipermanente	1h 0min	13:10:00-14:10:00
+Marta Bonilla	Nana Arabuli	New	19/05/26 13:00:00		Manicura	Semipermanente exprés	40min	13:00:00-13:40:00
+Nuria Felis Perez	Delcy Chaves	New	19/05/26 12:30:00		Manicura	Semipermanente exprés	40min	12:30:00-13:10:00
+Paloma Barbadillo	Viviana Hernández	New	18/05/26 18:15:00		Manicura	Semipermanente exprés	40min	18:15:00-18:55:00
+katy Isidro	Nana Arabuli	New	18/05/26 18:00:00		Manicura	Semipermanente completo	45min	18:00:00-18:45:00
+Raquel Rodríguez Sánchez	Delcy Chaves	New	18/05/26 16:45:00		Manicura	Uñas acrílicas con tips	1h 20min	16:45:00-18:05:00
+Almudena Moreno	Delcy Chaves	New	18/05/26 16:00:00		Manicura	Semipermanente completo	45min	16:00:00-16:45:00
+Juliana	Delcy Chaves	New	18/05/26 13:40:00		Pedicura	Pedicura completa con semipermanente	1h 0min	13:40:00-14:40:00
+Juliana	Delcy Chaves	New	18/05/26 12:40:00		Pedicura	Pedicura completa con semipermanente	1h 0min	12:40:00-13:40:00
+Juliana	Delcy Chaves	New	18/05/26 12:20:00		Manicura	Decoración de uñas	20min	12:20:00-12:40:00
+Juliana	Delcy Chaves	New	18/05/26 11:20:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	11:20:00-12:20:00
+Consejería Enseñanza Religiosa Evangélica	Shirley Avalos	New	18/05/26 11:00:00		Manicura	Uñas acrílicas con molde	2h 0min	11:00:00-13:00:00
+Juliana	Delcy Chaves	New	18/05/26 11:00:00		Manicura	Decoración de uñas	20min	11:00:00-11:20:00
+Juliana	Delcy Chaves	New	18/05/26 10:00:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	10:00:00-11:00:00
+tamara tamarabaiashvili145@gmail.com	Shirley Avalos	New	16/05/26 11:30:00		Manicura	Uñas acrílicas con tips	1h 20min	11:30:00-12:50:00
+Monica Aguilera	Viviana Hernández	New	16/05/26 11:10:00		Manicura	Relleno/Refuerzo con acrigel o poligel	1h 15min	11:10:00-12:25:00
+Monica Aguilera	Viviana Hernández	New	16/05/26 10:30:00		Manicura	Retirada de uñas acrílicas solo acetona	40min	10:30:00-11:10:00
+Vanesa Varela Isidro	Nana Arabuli	New	14/05/26 20:40:00		Manicura	Decoración de uñas	20min	20:40:00-21:00:00
+Vanesa Varela Isidro	Nana Arabuli	New	14/05/26 20:00:00		Manicura	Semipermanente exprés	40min	20:00:00-20:40:00
+Raquel Rodríguez Sánchez	Nana Arabuli	New	14/05/26 19:45:00		Manicura	Decoración de uñas	20min	19:45:00-20:05:00
+Raquel Rodríguez Sánchez	Viviana Hernández	New	14/05/26 19:20:00		Manicura	Decoración de uñas	30min	19:20:00-19:50:00
+Nawka	Shirley Avalos	New	14/05/26 19:00:00		Manicura	Semipermanente completo	1h 15min	19:00:00-20:15:00
+Raquel Rodríguez Sánchez	Nana Arabuli	New	14/05/26 18:45:00		Pedicura	Pedicura completa con semipermanente	1h 0min	18:45:00-19:45:00
+Silvi Aguado	Shirley Avalos	New	14/05/26 18:15:00		Manicura	Semipermanente exprés	40min	18:15:00-18:55:00
+Raquel Rodríguez Sánchez	Nana Arabuli	New	14/05/26 18:00:00		Manicura	Semipermanente completo	45min	18:00:00-18:45:00
+Raquel Rodríguez Sánchez	Viviana Hernández	New	14/05/26 18:00:00		Manicura	Uñas acrílicas con tips	1h 20min	18:00:00-19:20:00
+Carla Mariani	Nana Arabuli	New	14/05/26 17:15:00		Manicura	Semipermanente completo	45min	17:15:00-18:00:00
+Elia Gonzalez Ariza	Delcy Chaves	New	14/05/26 16:25:00		Depilación Cera	Depilación de cejas con cera (Solo limpieza)	15min	16:25:00-16:40:00
+Elia Gonzalez Ariza	Nana Arabuli	New	14/05/26 15:40:00		Pedicura	Pedicura exprés con semipermanente	45min	15:40:00-16:25:00
+Elia Gonzalez Ariza	Delcy Chaves	New	14/05/26 15:00:00		Manicura	Semipermanente exprés	40min	15:00:00-15:40:00
+Aitana Gordo	Shirley Avalos	New	14/05/26 13:30:00		Depilación Hilo	Depilación de cejas con hilo	30min	13:30:00-14:00:00
+Raquel Rodríguez Sánchez	Delcy Chaves	New	14/05/26 13:30:00		Estética	Lifting y tinte de pestañas	1h 20min	13:30:00-14:50:00
+Mayara Oliveira	Shirley Avalos	New	14/05/26 13:00:00		Depilación Hilo	Depilación de cejas con hilo	30min	13:00:00-13:30:00
+Nini	Nana Arabuli	New	14/05/26 13:00:00		Manicura	Relleno/Refuerzo con acrigel o poligel	1h 30min	13:00:00-14:30:00
+Sin cita	Nini Room	New	14/05/26 13:00:00		Estética	Extensiones de pestañas pelo a pelo	2h 0min	13:00:00-15:00:00
+Mayara Oliveira	Shirley Avalos	New	14/05/26 12:00:00		Manicura	Relleno/Refuerzo con base fibra	1h 0min	12:00:00-13:00:00
+Raquel Rodríguez Sánchez	Diana Enciso	New	14/05/26 12:00:00		Peluquería	Hidratación y nutrición	1h 30min	12:00:00-13:30:00
+Coral	Nini Room	New	14/05/26 11:00:00		Estética	Extensiones de pestañas 2D	2h 0min	11:00:00-13:00:00
+Lola	Delcy Chaves	New	14/05/26 11:00:00		Manicura	Semipermanente completo	45min	11:00:00-11:45:00
+Noelia Garcia	Nana Arabuli	New	13/05/26 20:15:00		Manicura	Semipermanente exprés	40min	20:15:00-20:55:00
+Irene Durán Ortega	Nana Arabuli	New	13/05/26 19:30:00		Manicura	Semipermanente completo	45min	19:30:00-20:15:00
+Ashley Lisintuña	Shirley Avalos	New	13/05/26 19:15:00		Manicura	Uñas acrílicas con tips	1h 20min	19:15:00-20:35:00
+Janeth	Diana Enciso	New	13/05/26 19:15:00		Peluquería	Corte	40min	19:15:00-19:55:00
+Guadalupe MARTIN DOMENECH	Shirley Avalos	New	13/05/26 18:30:00		Manicura	Semipermanente completo	45min	18:30:00-19:15:00
+Susana Manzanero	Rosa Ruiz	New	13/05/26 18:30:00		Manicura	Semipermanente completo	45min	18:30:00-19:15:00
+nieves	Viviana Hernández	New	13/05/26 18:30:00		Manicura	Semipermanente completo	1h 5min	18:30:00-19:35:00
+Maribel Delgado	Nana Arabuli	New	13/05/26 18:30:00		Manicura	Relleno/Refuerzo con base fibra	1h 0min	18:30:00-19:30:00
+Elena Barras	Diana Enciso	New	13/05/26 18:10:00		Pedicura	Pedicura completa con semipermanente	1h 0min	18:10:00-19:10:00
+Ana Paton	Nana Arabuli	New	13/05/26 18:00:00		Manicura	Decoración de uñas	30min	18:00:00-18:30:00
+Elena Barras	Diana Enciso	New	13/05/26 17:30:00		Manicura	Semipermanente exprés	40min	17:30:00-18:10:00
+Ana Paton	Nana Arabuli	New	13/05/26 17:15:00		Manicura	Semipermanente completo	45min	17:15:00-18:00:00
+arantxa garcia dumbravean	Delcy Chaves	New	13/05/26 17:00:00		Manicura	Retirada de uñas acrílicas con torno	30min	17:00:00-17:30:00
+Maria Eugénia	Viviana Hernández	New	13/05/26 17:00:00		Manicura	Relleno/Refuerzo con acrigel o poligel	1h 15min	17:00:00-18:15:00
+Angeles Maqueda Marin	Nana Arabuli	New	13/05/26 16:30:00		Manicura	Semipermanente completo	45min	16:30:00-17:15:00
+María García	Nana Arabuli	New	13/05/26 15:30:00		Manicura	Semipermanente exprés	40min	15:30:00-16:10:00
+Laura Martín	Nini Room	New	13/05/26 15:30:00		Estética	Extensiones de pestañas pelo a pelo	2h 0min	15:30:00-17:30:00
+arantxa garcia dumbravean	Delcy Chaves	New	13/05/26 14:45:00		Manicura	Uñas acrílicas con molde	2h 15min	14:45:00-17:00:00
+Sonia Lirio García	Delcy Chaves	New	13/05/26 14:00:00		Manicura	Semipermanente exprés	40min	14:00:00-14:40:00
+Ainara Canton Diaz	Nana Arabuli	Cancelado	13/05/26 13:40:00	11/05/26 10:25:14	Pedicura	Pedicura exprés con semipermanente	45min	13:40:00-14:25:00
+Flor Simon	Shirley Avalos	New	13/05/26 13:00:00		Manicura	Semipermanente exprés	50min	13:00:00-13:50:00
+Ainara Canton Diaz	Nana Arabuli	Cancelado	13/05/26 13:00:00	11/05/26 10:25:14	Manicura	Semipermanente exprés	40min	13:00:00-13:40:00
+Africa	Shirley Avalos	New	13/05/26 11:30:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	11:30:00-12:30:00
+andrea carolina zapata perez	Delcy Chaves	New	13/05/26 11:15:00		Manicura	Semipermanente completo	45min	11:15:00-12:00:00
+Nini	Diana Enciso	Cancelado	13/05/26 11:00:00	07/05/26 11:22:18	Peluquería	Tinte completo	1h 30min	11:00:00-12:30:00
+Sin cita	Nini Room	Cancelado	13/05/26 11:00:00	07/05/26 11:22:12	Estética	Extensiones de pestañas pelo a pelo	2h 0min	11:00:00-13:00:00
+andrea carolina zapata perez	Delcy Chaves	New	13/05/26 10:15:00		Pedicura	Pedicura completa con semipermanente	1h 0min	10:15:00-11:15:00
+Rocío Nieto López	Nana Arabuli	New	12/05/26 18:00:00		Manicura	Relleno/Refuerzo con acrílico	1h 10min	18:00:00-19:10:00
+maría bermejo	Delcy Chaves	New	12/05/26 17:30:00		Manicura	Decoración de uñas	20min	17:30:00-17:50:00
+Lilian Ramona Caceres Benitez	Diana Enciso	New	12/05/26 17:00:00		Pedicura	Pedicura completa con semipermanente	1h 0min	17:00:00-18:00:00
+maría bermejo	Delcy Chaves	New	12/05/26 16:30:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	16:30:00-17:30:00
+Sonia	Nana Arabuli	New	12/05/26 16:00:00		Manicura	Relleno/Refuerzo con acrílico	2h 0min	16:00:00-18:00:00
+Cintia Sánchez González	Nana Arabuli	New	12/05/26 14:55:00		Manicura	Reconstrucción de uña/Uña rota	20min	14:55:00-15:15:00
+Cintia Sánchez González	Nana Arabuli	New	12/05/26 14:15:00		Manicura	Semipermanente exprés	40min	14:15:00-14:55:00
+Katy Hurtado	Nini Room	New	12/05/26 13:30:00		Estética	Extensiones de pestañas pelo a pelo	2h 0min	13:30:00-15:30:00
+Nirella	Diana Enciso	New	12/05/26 13:00:00		Manicura	Semipermanente completo	45min	13:00:00-13:45:00
+Ainara Canton Diaz	Nana Arabuli	New	12/05/26 12:00:00		Manicura	Semipermanente exprés	40min	12:00:00-12:40:00
+Bárbara Fernández García	Shirley Avalos	New	12/05/26 11:30:00		Manicura	Relleno/Refuerzo con acrílico	1h 0min	11:30:00-12:30:00
+Alejandra Ortega	Delcy Chaves	New	12/05/26 11:00:00		Manicura	Semipermanente completo	45min	11:00:00-11:45:00
+Nini	Diana Enciso	New	12/05/26 10:00:00		Peluquería	Tinte completo	2h 0min	10:00:00-12:00:00
