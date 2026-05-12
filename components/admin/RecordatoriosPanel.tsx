@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { format, addDays, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
+import { createClient } from "@/lib/supabase";
 import type { Reserva } from "@/types";
 
 const WA_ICON = (
@@ -19,12 +20,12 @@ function generarMensaje(r: Reserva): string {
   const profesional = r.profesionales?.nombre;
 
   return (
-    `Hola ${nombre}! Te recordamos tu cita en *Beauty Room Nini* 🌸\n\n` +
-    `📅 *Fecha:* ${fechaCorta}\n` +
-    `⏰ *Hora:* ${hora}h\n` +
-    `✂️ *Servicio:* ${servicio}\n` +
-    (profesional ? `👩 *Con:* ${profesional}\n` : "") +
-    `\n¡Te esperamos! Si necesitas cancelar o cambiar avísanos con antelación 🙏`
+    `Hola ${nombre}! Te recordamos tu cita en *Beauty Room Nini*\n\n` +
+    `*Fecha:* ${fechaCorta}\n` +
+    `*Hora:* ${hora}h\n` +
+    `*Servicio:* ${servicio}\n` +
+    (profesional ? `*Con:* ${profesional}\n` : "") +
+    `\nTe esperamos! Si necesitas cancelar o cambiar avisanos con antelacion.`
   );
 }
 
@@ -43,7 +44,6 @@ export function RecordatoriosPanel() {
 
   useEffect(() => {
     setCargando(true);
-    setEnviados(new Set());
     fetch(`/api/reservas?desde=${fecha}&hasta=${fecha}`)
       .then((r) => r.json())
       .then((data) => {
@@ -51,17 +51,29 @@ export function RecordatoriosPanel() {
           ? data.filter((r: Reserva) => r.estado === "pendiente" || r.estado === "confirmada")
           : [];
         setReservas(filtradas);
+        // Inicializar marcas desde el campo persistido en DB
+        setEnviados(new Set(
+          filtradas.filter((r) => r.recordatorio_enviado_at).map((r) => r.id)
+        ));
       })
-      .catch(() => setReservas([]))
+      .catch(() => { setReservas([]); setEnviados(new Set()); })
       .finally(() => setCargando(false));
   }, [fecha]);
 
-  function toggleEnviado(id: string) {
+  async function toggleEnviado(id: string) {
+    const yaEnviado = enviados.has(id);
+    const nuevoValor = yaEnviado ? null : new Date().toISOString();
+
     setEnviados((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (yaEnviado) next.delete(id); else next.add(id);
       return next;
     });
+
+    await createClient()
+      .from("reservas")
+      .update({ recordatorio_enviado_at: nuevoValor })
+      .eq("id", id);
   }
 
   const conTel = reservas.filter((r) => r.clientes?.telefono);

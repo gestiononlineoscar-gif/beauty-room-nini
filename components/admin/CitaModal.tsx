@@ -123,7 +123,7 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
       `*Hora:* ${hora}h\n` +
       `*Servicio:* ${servicio}\n` +
       (profesional ? `*Con:* ${profesional.nombre}\n` : "") +
-      `\n¡Te esperamos! Si necesitas cambiar o cancelar, escríbenos.`;
+      `\nTe esperamos! Si necesitas cambiar o cancelar, escribenos.`;
 
     return `https://wa.me/${telLimpio}?text=${encodeURIComponent(mensaje)}`;
   }
@@ -682,6 +682,12 @@ export function CitaModal({ reserva, profesionales, open, onClose, onActualizada
         )}
 
         {/* Recordatorio WhatsApp */}
+        {reserva.recordatorio_enviado_at && (
+          <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-3 py-2 mb-2">
+            <Check size={14} className="flex-shrink-0" />
+            Recordatorio enviado el {format(parseISO(reserva.recordatorio_enviado_at), "d MMM 'a las' HH:mm", { locale: es })}
+          </div>
+        )}
         {reserva.clientes?.telefono && reserva.estado !== "cancelada" && (
           <a
             href={generarLinkWhatsApp()}

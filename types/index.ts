@@ -85,6 +85,7 @@ export interface Reserva {
   variante_id: string | null;
   pagado: boolean;
   metodo_pago: string | null;
+  recordatorio_enviado_at: string | null;
   created_at: string;
   /* joins opcionales */
   clientes?: Cliente;

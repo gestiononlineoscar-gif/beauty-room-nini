@@ -10,13 +10,39 @@ function adminClient() {
   );
 }
 
-// GET /api/clientes?q=texto — búsqueda por nombre o teléfono (solo admin)
+// GET /api/clientes
+//   ?q=texto              → autocomplete: devuelve Cliente[] (máx 10) — para NuevaReservaModal
+//   ?page=N[&q=texto]     → paginación: devuelve { data: Cliente[], total: number } — para ClientesLista
 export async function GET(req: NextRequest) {
   const authClient = await createServerSupabaseClient();
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const q = req.nextUrl.searchParams.get("q") ?? "";
+  const pageParam = req.nextUrl.searchParams.get("page");
+
+  if (pageParam !== null) {
+    // Modo lista/paginación
+    const page = Math.max(1, Number(pageParam) || 1);
+    const limit = 50;
+    const offset = (page - 1) * limit;
+
+    let query = adminClient()
+      .from("clientes")
+      .select("*", { count: "exact" })
+      .order("nombre");
+
+    if (q.length >= 2) {
+      query = query.or(`nombre.ilike.%${q}%,telefono.ilike.%${q}%,email.ilike.%${q}%`);
+    }
+
+    const { data, count, error } = await query.range(offset, offset + limit - 1);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ data: data ?? [], total: count ?? 0 });
+  }
+
+  // Modo autocomplete
   if (q.length < 2) return NextResponse.json([]);
 
   const { data } = await adminClient()
