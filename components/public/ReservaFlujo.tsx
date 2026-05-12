@@ -266,17 +266,21 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     const dur2 = varianteSel?.duracion_min ?? servicioSel.duracion_min;
     const horaInicioS2 = slotSel.hora_fin;
 
+    const checkDisponible = async (profId: string) => {
+      const res = await fetch(
+        `/api/disponible?profesional_id=${profId}&fecha=${fecha}&hora_inicio=${horaInicioS2}&duracion_min=${dur2}`
+      );
+      const data = await res.json();
+      return data.disponible === true;
+    };
+
     try {
       if (esCualquiera) {
         const resultados = await Promise.all(
-          profesionalesDelServicio.map(async (p) => {
-            const res = await fetch(`/api/slots?profesional_id=${p.id}&fecha=${fecha}&duracion_min=${dur2}`);
-            const data: SlotDisponible[] = await res.json();
-            return {
-              profId: p.id,
-              disponible: data.find((s) => s.hora_inicio === horaInicioS2)?.disponible ?? false,
-            };
-          })
+          profesionalesDelServicio.map(async (p) => ({
+            profId: p.id,
+            disponible: await checkDisponible(p.id),
+          }))
         );
         const disponible = resultados.find((r) => r.disponible);
         if (!disponible) {
@@ -286,10 +290,8 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
         }
         setCualquieraProfMap2({ [horaInicioS2]: disponible.profId });
       } else {
-        const res = await fetch(`/api/slots?profesional_id=${prof!.id}&fecha=${fecha}&duracion_min=${dur2}`);
-        const data: SlotDisponible[] = await res.json();
-        const slotOk = data.find((s) => s.hora_inicio === horaInicioS2);
-        if (!slotOk?.disponible) {
+        const libre = await checkDisponible(prof!.id);
+        if (!libre) {
           setErrorS2(`${prof!.nombre} no está disponible a las ${horaInicioS2}. Prueba con otro profesional o cambia el horario.`);
           setVerificandoS2(false);
           return;
