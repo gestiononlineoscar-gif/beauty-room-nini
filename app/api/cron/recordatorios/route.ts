@@ -4,7 +4,7 @@ import { enviarRecordatorio } from "@/lib/emails";
 import { addDays } from "date-fns";
 import { format } from "date-fns";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const manana = format(addDays(new Date(), 1), "yyyy-MM-dd");
   const supabase = await createServerSupabaseClient();
 

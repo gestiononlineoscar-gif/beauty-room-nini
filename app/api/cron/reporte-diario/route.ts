@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { enviarReporteDiario } from "@/lib/emails";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const supabase = await createServerSupabaseClient();
   const hoy = new Date().toISOString().split("T")[0];
 
