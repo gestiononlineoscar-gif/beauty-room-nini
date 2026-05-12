@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+
+function adminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
 
 const CAMPOS_PERMITIDOS = ["bloqueado", "notas", "inasistencias"] as const;
 
@@ -7,6 +16,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Solo admins autenticados pueden modificar clientes
+  const authClient = await createServerSupabaseClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
   const { id } = await params;
   const body = await req.json();
 
@@ -19,8 +33,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
   }
 
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
+  // Usar service role para evitar bloqueo RLS
+  const { data, error } = await adminClient()
     .from("clientes")
     .update(update)
     .eq("id", id)

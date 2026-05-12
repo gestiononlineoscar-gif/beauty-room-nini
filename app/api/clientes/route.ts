@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 function adminClient() {
   return createClient(
@@ -9,8 +10,12 @@ function adminClient() {
   );
 }
 
-// GET /api/clientes?q=texto — búsqueda por nombre o teléfono
+// GET /api/clientes?q=texto — búsqueda por nombre o teléfono (solo admin)
 export async function GET(req: NextRequest) {
+  const authClient = await createServerSupabaseClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
   const q = req.nextUrl.searchParams.get("q") ?? "";
   if (q.length < 2) return NextResponse.json([]);
 

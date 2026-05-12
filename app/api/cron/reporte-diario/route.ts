@@ -1,8 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { enviarReporteDiario } from "@/lib/emails";
 
-export async function GET() {
+function verificarCron(req: NextRequest) {
+  if (process.env.NODE_ENV !== "production") return true;
+  const auth = req.headers.get("authorization");
+  return auth === `Bearer ${process.env.CRON_SECRET}`;
+}
+
+export async function GET(req: NextRequest) {
+  if (!verificarCron(req)) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   const supabase = await createServerSupabaseClient();
   const hoy = new Date().toISOString().split("T")[0];
 

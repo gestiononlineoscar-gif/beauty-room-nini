@@ -1,10 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { enviarRecordatorio } from "@/lib/emails";
-import { addDays } from "date-fns";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 
-export async function GET() {
+function verificarCron(req: NextRequest) {
+  if (process.env.NODE_ENV !== "production") return true;
+  const auth = req.headers.get("authorization");
+  return auth === `Bearer ${process.env.CRON_SECRET}`;
+}
+
+export async function GET(req: NextRequest) {
+  if (!verificarCron(req)) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   const manana = format(addDays(new Date(), 1), "yyyy-MM-dd");
   const supabase = await createServerSupabaseClient();
 
