@@ -133,13 +133,14 @@ export function ClientesLista({ clientes: inicial }: Props) {
               <th className="text-left px-4 py-3 font-semibold">Nombre</th>
               <th className="text-left px-4 py-3 font-semibold hidden sm:table-cell">Teléfono</th>
               <th className="text-left px-4 py-3 font-semibold hidden md:table-cell">Email</th>
+              <th className="text-center px-4 py-3 font-semibold hidden sm:table-cell">Faltas</th>
               <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">Desde</th>
               <th className="text-center px-4 py-3 font-semibold">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {filtrados.length === 0 && (
-              <tr><td colSpan={5} className="text-center py-8 text-[#6b6360]">Sin clientes</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-[#6b6360]">Sin clientes</td></tr>
             )}
             {filtrados.map((c) => (
               <tr key={c.id} className={`border-t border-[#f4f1ef] transition-colors ${c.bloqueado ? "bg-red-50" : "hover:bg-[#fdf6f0]"}`}>
@@ -151,16 +152,24 @@ export function ClientesLista({ clientes: inicial }: Props) {
                         Bloqueada
                       </span>
                     )}
-                    {(c.inasistencias ?? 0) > 0 && (
-                      <span className="text-xs bg-orange-100 text-orange-700 border border-orange-200 px-1.5 py-0.5 rounded-full font-medium">
-                        {c.inasistencias} inasistencia{c.inasistencias !== 1 ? "s" : ""}
-                      </span>
-                    )}
                   </div>
                   {c.notas && <p className="text-xs text-[#6b6360] mt-0.5 italic">{c.notas}</p>}
                 </td>
                 <td className="px-4 py-3 hidden sm:table-cell text-[#6b6360]">{c.telefono ?? "—"}</td>
                 <td className="px-4 py-3 hidden md:table-cell text-[#6b6360]">{c.email ?? "—"}</td>
+                <td className="px-4 py-3 text-center hidden sm:table-cell">
+                  {(c.inasistencias ?? 0) === 0 ? (
+                    <span className="text-sm text-[#6b6360]">0</span>
+                  ) : (
+                    <span className={`inline-block min-w-[1.5rem] text-center text-sm font-bold px-2 py-0.5 rounded-full ${
+                      (c.inasistencias ?? 0) >= 2
+                        ? "bg-red-100 text-red-700"
+                        : "bg-orange-100 text-orange-700"
+                    }`}>
+                      {c.inasistencias}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3 hidden lg:table-cell text-[#6b6360] text-xs">
                   {format(parseISO(c.created_at), "d MMM yyyy", { locale: es })}
                 </td>
