@@ -53,6 +53,29 @@ export function ReservasLista({ reservasIniciales, profesionales }: Props) {
     toast.success("Estado actualizado");
   }
 
+  async function marcarInasistencia(reserva: Reserva) {
+    const supabase = createClient();
+    const { error } = await supabase.from("reservas").update({ estado: "no_presentada" }).eq("id", reserva.id);
+    if (error) { toast.error("Error al actualizar"); return; }
+
+    if (reserva.cliente_id) {
+      const inasistencias = (reserva.clientes?.inasistencias ?? 0) + 1;
+      await fetch(`/api/clientes/${reserva.cliente_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inasistencias }),
+      });
+      setReservas((prev) => prev.map((r) =>
+        r.id === reserva.id
+          ? { ...r, estado: "no_presentada", clientes: r.clientes ? { ...r.clientes, inasistencias } : r.clientes }
+          : r
+      ));
+    } else {
+      setReservas((prev) => prev.map((r) => r.id === reserva.id ? { ...r, estado: "no_presentada" } : r));
+    }
+    toast.success("Inasistencia registrada");
+  }
+
   function onReservaCreada(nueva: Reserva) {
     setReservas((prev) => [nueva, ...prev]);
     setModalNueva(false);
@@ -142,6 +165,11 @@ export function ReservasLista({ reservasIniciales, profesionales }: Props) {
                     <td className="px-4 py-3">
                       <p className="font-medium text-[#1a1412]">{r.clientes?.nombre ?? "—"}</p>
                       <p className="text-xs text-[#6b6360]">{r.clientes?.telefono}</p>
+                      {(r.clientes?.inasistencias ?? 0) > 0 && (
+                        <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
+                          {r.clientes!.inasistencias} falta{r.clientes!.inasistencias !== 1 ? "s" : ""}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell text-[#1a1412]">
                       <p>{r.servicios?.nombre ?? "—"}</p>
@@ -169,7 +197,7 @@ export function ReservasLista({ reservasIniciales, profesionales }: Props) {
                     <td className="px-4 py-3">
                       <div className="flex gap-1 flex-wrap">
                         {r.estado !== "cancelada" && r.estado !== "completada" && r.estado !== "no_presentada" && (
-                          <button onClick={() => cambiarEstado(r.id, "no_presentada")}
+                          <button onClick={() => marcarInasistencia(r)}
                             className="text-xs bg-orange-500 text-white px-2 py-1 rounded-lg hover:bg-orange-600 transition-colors">
                             Inasistencia
                           </button>

@@ -10,7 +10,7 @@ function adminClient() {
   );
 }
 
-const CAMPOS_PERMITIDOS = ["bloqueado", "notas", "inasistencias"] as const;
+const CAMPOS_PERMITIDOS = ["bloqueado", "notas", "inasistencias", "nombre", "telefono", "email"] as const;
 
 export async function PATCH(
   req: NextRequest,
