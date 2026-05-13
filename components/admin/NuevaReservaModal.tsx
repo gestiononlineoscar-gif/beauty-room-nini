@@ -16,6 +16,16 @@ interface ClienteSugerencia {
   email: string;
 }
 
+interface LineaServicio {
+  uid: string;
+  servicioId: string;
+  varianteId: string;
+  servicio: Servicio;
+  variantes: ServicioVariante[];
+  duracion: number;
+  precio: number;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -25,10 +35,13 @@ interface Props {
   onCreada: (r: Reserva) => void;
 }
 
+let uidCounter = 0;
+function genUid() { return `linea-${++uidCounter}`; }
+
 export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, profesionalPreseleccionada, onCreada }: Props) {
   const [servicios, setServicios] = useState<Servicio[]>([]);
-  const [variantes, setVariantes] = useState<ServicioVariante[]>([]);
   const [slots, setSlots] = useState<SlotDisponible[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Cliente
@@ -39,16 +52,17 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
   const [mostrarSug, setMostrarSug] = useState(false);
   const sugRef = useRef<HTMLDivElement>(null);
 
-  // Servicio
-  const [servicioId, setServicioId] = useState("");
-  const [varianteId, setVarianteId] = useState("");
+  // Multi-servicio (picker inline, nunca absolute)
+  const [lineas, setLineas] = useState<LineaServicio[]>([]);
+  const [pickerAbierto, setPickerAbierto] = useState(false);
   const [busquedaServicio, setBusquedaServicio] = useState("");
+  const busquedaRef = useRef<HTMLInputElement>(null);
 
   // Profesional / fecha
   const [profesionalId, setProfesionalId] = useState(profesionalPreseleccionada?.id ?? "");
   const [fecha, setFecha] = useState(format(fechaInicial, "yyyy-MM-dd"));
 
-  // Hora manual (para reservas fuera de horario del salón)
+  // Hora
   const [horaManual, setHoraManual] = useState(false);
   const [horaInicioManual, setHoraInicioManual] = useState(
     format(fechaInicial, "HH:mm") !== "00:00" ? format(fechaInicial, "HH:mm") : "10:00"
@@ -56,7 +70,12 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
   const [horaFinManual, setHoraFinManual] = useState("");
   const [slotSeleccionado, setSlotSeleccionado] = useState<SlotDisponible | null>(null);
 
-  // Reset de estado cada vez que el modal se abre
+  const totalDuracion = lineas.reduce((sum, l) => sum + l.duracion, 0);
+  const totalPrecio = lineas.reduce((sum, l) => sum + l.precio, 0);
+  const lineasSinVariante = lineas.filter((l) => l.servicio.precio_desde && !l.varianteId);
+  const listo = lineas.length > 0 && totalDuracion > 0 && lineasSinVariante.length === 0;
+
+  // Reset al abrir
   useEffect(() => {
     if (!open) return;
     setClienteNombre("");
@@ -64,8 +83,8 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
     setClienteEmail("");
     setSugerencias([]);
     setMostrarSug(false);
-    setServicioId("");
-    setVarianteId("");
+    setLineas([]);
+    setPickerAbierto(false);
     setBusquedaServicio("");
     setProfesionalId(profesionalPreseleccionada?.id ?? "");
     setFecha(format(fechaInicial, "yyyy-MM-dd"));
@@ -76,11 +95,10 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
     setHoraFinManual("");
     setSlotSeleccionado(null);
     setSlots([]);
-    setVariantes([]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Fetch servicios
+  // Fetch lista de servicios
   useEffect(() => {
     fetch("/api/servicios")
       .then((r) => r.json())
@@ -88,48 +106,32 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
       .catch(() => {});
   }, []);
 
-  // Fetch variantes cuando cambia el servicio
-  useEffect(() => {
-    setVariantes([]);
-    setVarianteId("");
-    setSlotSeleccionado(null);
-    if (!servicioId) return;
-    const servicio = servicios.find((s) => s.id === servicioId);
-    if (!servicio?.precio_desde) return;
-    fetch(`/api/servicio-variantes?servicio_id=${servicioId}`)
-      .then((r) => r.json())
-      .then((data) => setVariantes(Array.isArray(data) ? data : []));
-  }, [servicioId, servicios]);
-
-  const servicioSeleccionado = servicios.find((s) => s.id === servicioId);
-  const varianteSeleccionada = variantes.find((v) => v.id === varianteId);
-  const duracion = varianteSeleccionada?.duracion_min ?? servicioSeleccionado?.duracion_min;
-
-  // Fetch slots (solo si no es hora manual)
+  // Fetch slots cuando hay todo lo necesario
   useEffect(() => {
     if (horaManual) return;
     setSlots([]);
     setSlotSeleccionado(null);
-    if (!profesionalId || !servicioId || !fecha || !duracion) return;
-    if (servicioSeleccionado?.precio_desde && variantes.length > 0 && !varianteId) return;
-    fetch(`/api/slots?profesional_id=${profesionalId}&fecha=${fecha}&duracion_min=${duracion}`)
+    if (!profesionalId || !fecha || !listo) return;
+    setLoadingSlots(true);
+    fetch(`/api/slots?profesional_id=${profesionalId}&fecha=${fecha}&duracion_min=${totalDuracion}`)
       .then((r) => r.json())
       .then((data) => setSlots(Array.isArray(data) ? data : []))
-      .catch(() => setSlots([]));
-  }, [profesionalId, servicioId, varianteId, fecha, duracion, variantes.length, servicioSeleccionado?.precio_desde, horaManual]);
+      .catch(() => setSlots([]))
+      .finally(() => setLoadingSlots(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profesionalId, fecha, totalDuracion, listo, horaManual]);
 
-  // Calcular horaFin automáticamente en modo manual
+  // Hora fin automática en modo manual
   useEffect(() => {
-    if (!horaManual || !horaInicioManual || !duracion) return;
+    if (!horaManual || !horaInicioManual || totalDuracion === 0) return;
     try {
       const base = new Date();
       const ini = parse(horaInicioManual, "HH:mm", base);
-      const fin = addMinutes(ini, duracion);
-      setHoraFinManual(format(fin, "HH:mm"));
+      setHoraFinManual(format(addMinutes(ini, totalDuracion), "HH:mm"));
     } catch {}
-  }, [horaInicioManual, duracion, horaManual]);
+  }, [horaInicioManual, totalDuracion, horaManual]);
 
-  // Autocomplete de clientes
+  // Autocomplete clientes
   useEffect(() => {
     const q = clienteTelefono.length >= 3 ? clienteTelefono : clienteNombre.length >= 3 ? clienteNombre : "";
     if (!q) { setSugerencias([]); return; }
@@ -142,16 +144,20 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
     return () => clearTimeout(timer);
   }, [clienteTelefono, clienteNombre]);
 
-  // Cerrar sugerencias al clicar fuera
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (sugRef.current && !sugRef.current.contains(e.target as Node)) {
-        setMostrarSug(false);
-      }
+      if (sugRef.current && !sugRef.current.contains(e.target as Node)) setMostrarSug(false);
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Abrir picker y hacer focus en el buscador
+  function abrirPicker() {
+    setPickerAbierto(true);
+    setBusquedaServicio("");
+    setTimeout(() => busquedaRef.current?.focus(), 50);
+  }
 
   function seleccionarCliente(c: ClienteSugerencia) {
     setClienteNombre(c.nombre);
@@ -161,56 +167,81 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
     setMostrarSug(false);
   }
 
-  // Servicios filtrados por búsqueda
-  const normalize = (s: string) =>
-    s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  async function agregarServicio(servicio: Servicio) {
+    setBusquedaServicio("");
+    setSlotSeleccionado(null);
+    // Mantener el picker abierto para añadir más servicios fácilmente
+    busquedaRef.current?.focus();
 
-  const serviciosFiltrados = servicios.filter((s) =>
-    !busquedaServicio || normalize(s.nombre).includes(normalize(busquedaServicio))
+    let variantes: ServicioVariante[] = [];
+    if (servicio.precio_desde) {
+      try {
+        const res = await fetch(`/api/servicio-variantes?servicio_id=${servicio.id}`);
+        const data = await res.json();
+        if (Array.isArray(data)) variantes = data;
+      } catch {}
+    }
+
+    setLineas((prev) => [
+      ...prev,
+      {
+        uid: genUid(),
+        servicioId: servicio.id,
+        varianteId: "",
+        servicio,
+        variantes,
+        duracion: servicio.precio_desde ? 0 : servicio.duracion_min,
+        precio: servicio.precio_desde ? 0 : Number(servicio.precio),
+      },
+    ]);
+  }
+
+  function cambiarVariante(uid: string, varianteId: string) {
+    setLineas((prev) =>
+      prev.map((l) => {
+        if (l.uid !== uid) return l;
+        const v = l.variantes.find((v) => v.id === varianteId);
+        return { ...l, varianteId, duracion: v?.duracion_min ?? 0, precio: v ? Number(v.precio) : 0 };
+      })
+    );
+    setSlotSeleccionado(null);
+  }
+
+  function eliminarLinea(uid: string) {
+    setLineas((prev) => prev.filter((l) => l.uid !== uid));
+    setSlotSeleccionado(null);
+  }
+
+  const normalize = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const serviciosFiltrados = servicios.filter(
+    (s) => !busquedaServicio || normalize(s.nombre).includes(normalize(busquedaServicio))
   );
 
   async function handleCrear(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!servicioId || !profesionalId) {
-      toast.error("Selecciona servicio y profesional");
-      return;
-    }
-    if (servicioSeleccionado?.precio_desde && variantes.length > 0 && !varianteId) {
-      toast.error("Selecciona el tamaño del servicio");
-      return;
-    }
-    if (!horaManual && !slotSeleccionado) {
-      toast.error("Selecciona una hora");
-      return;
-    }
-    if (horaManual && (!horaInicioManual || !horaFinManual)) {
-      toast.error("Introduce hora de inicio y fin");
-      return;
-    }
-    if (horaManual && horaFinManual <= horaInicioManual) {
-      toast.error("La hora de fin debe ser posterior a la de inicio");
+    if (lineas.length === 0) { toast.error("Añade al menos un servicio"); return; }
+    if (lineasSinVariante.length > 0) { toast.error("Selecciona el tamaño de todos los servicios"); return; }
+    if (!profesionalId) { toast.error("Selecciona una profesional"); return; }
+    if (!horaManual && !slotSeleccionado) { toast.error("Selecciona una hora"); return; }
+    if (horaManual && (!horaInicioManual || !horaFinManual)) { toast.error("Introduce hora de inicio y fin"); return; }
+    if (horaManual && horaFinManual <= horaInicioManual) { toast.error("La hora de fin debe ser posterior a la de inicio"); return; }
+
+    if (!clienteTelefono && !clienteNombre) {
+      toast.error("Introduce al menos el nombre o teléfono del cliente");
       return;
     }
 
     setLoading(true);
 
-    // Buscar o crear cliente vía API (service role key)
-    let clienteId: string;
-    if (clienteTelefono || clienteNombre) {
-      const res = await fetch("/api/clientes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: clienteNombre, telefono: clienteTelefono, email: clienteEmail }),
-      });
-      if (!res.ok) { toast.error("Error al registrar el cliente"); setLoading(false); return; }
-      const c = await res.json();
-      clienteId = c.id;
-    } else {
-      toast.error("Introduce al menos el nombre o teléfono del cliente");
-      setLoading(false);
-      return;
-    }
+    const resCliente = await fetch("/api/clientes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre: clienteNombre, telefono: clienteTelefono, email: clienteEmail }),
+    });
+    if (!resCliente.ok) { toast.error("Error al registrar el cliente"); setLoading(false); return; }
+    const clienteData = await resCliente.json();
+    const clienteId: string = clienteData.id;
 
     const horaInicio = horaManual ? horaInicioManual + ":00" : slotSeleccionado!.hora_inicio + ":00";
     const horaFin    = horaManual ? horaFinManual    + ":00" : slotSeleccionado!.hora_fin    + ":00";
@@ -218,13 +249,14 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
     const { createClient } = await import("@/lib/supabase");
     const supabase = createClient();
 
+    const primera = lineas[0];
     const { data: reserva, error } = await supabase
       .from("reservas")
       .insert({
         cliente_id: clienteId,
         profesional_id: profesionalId,
-        servicio_id: servicioId,
-        variante_id: varianteId || null,
+        servicio_id: primera.servicioId,
+        variante_id: primera.varianteId || null,
         fecha,
         hora_inicio: horaInicio,
         hora_fin: horaFin,
@@ -233,22 +265,24 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
       .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
       .single();
 
-    if (error) {
-      toast.error("Error al crear la reserva");
-    } else {
-      toast.success("Reserva creada correctamente");
-      onCreada(reserva as Reserva);
+    if (error) { toast.error("Error al crear la reserva"); setLoading(false); return; }
+
+    if (lineas.length > 1) {
+      const { error: errLineas } = await supabase.from("reserva_servicios").insert(
+        lineas.map((l, i) => ({
+          reserva_id: reserva.id,
+          servicio_id: l.servicioId,
+          variante_id: l.varianteId || null,
+          orden: i,
+        }))
+      );
+      if (errLineas) console.error("reserva_servicios:", errLineas.message);
     }
+
+    toast.success("Reserva creada correctamente");
+    onCreada(reserva as Reserva);
     setLoading(false);
   }
-
-  const precioDisplay = varianteSeleccionada
-    ? `${Number(varianteSeleccionada.precio).toFixed(2)} €`
-    : servicioSeleccionado?.precio_desde
-      ? `desde ${Number(servicioSeleccionado.precio).toFixed(0)} €`
-      : servicioSeleccionado
-        ? `${Number(servicioSeleccionado.precio).toFixed(2)} €`
-        : "";
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -261,7 +295,7 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
         </DialogHeader>
 
         <form onSubmit={handleCrear} className="space-y-4 mt-2">
-          {/* Cliente con autocomplete */}
+          {/* Cliente */}
           <div className="bg-white rounded-xl border border-[#e8c5ce] p-4 space-y-3">
             <p className="text-sm font-semibold text-[#1a1412]">Datos del cliente</p>
 
@@ -292,7 +326,7 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
               )}
             </div>
 
-            <div className="relative">
+            <div>
               <Label className="text-xs text-[#6b6360]">Nombre *</Label>
               <Input
                 value={clienteNombre}
@@ -317,50 +351,104 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
             </div>
           </div>
 
-          {/* Servicio con buscador */}
-          <div>
-            <Label className="text-xs text-[#6b6360]">Servicio *</Label>
-            <Input
-              placeholder="Buscar servicio..."
-              value={busquedaServicio}
-              onChange={(e) => setBusquedaServicio(e.target.value)}
-              className="mt-1 mb-1 border-[#e8c5ce] focus-visible:ring-[#C4728A]"
-            />
-            <select
-              value={servicioId}
-              onChange={(e) => { setServicioId(e.target.value); setSlotSeleccionado(null); }}
-              required
-              size={serviciosFiltrados.length > 0 ? Math.min(serviciosFiltrados.length + 1, 6) : 2}
-              className="w-full border border-[#e8c5ce] rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C4728A]"
-            >
-              <option value="">Selecciona un servicio...</option>
-              {serviciosFiltrados.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nombre}{s.precio_desde ? ` — desde ${Number(s.precio).toFixed(0)}€` : ` — ${Number(s.precio).toFixed(2)}€`} · {s.duracion_min}min
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Servicios */}
+          <div className="space-y-2">
+            <Label className="text-xs text-[#6b6360]">Servicios *</Label>
 
-          {/* Variante */}
-          {servicioSeleccionado?.precio_desde && variantes.length > 0 && (
-            <div>
-              <Label className="text-xs text-[#6b6360]">Tamaño *</Label>
-              <select
-                value={varianteId}
-                onChange={(e) => { setVarianteId(e.target.value); setSlotSeleccionado(null); }}
-                required
-                className="mt-1 w-full border border-[#e8c5ce] rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C4728A]"
+            {/* Servicios añadidos */}
+            {lineas.map((l) => (
+              <div key={l.uid} className="bg-white rounded-xl border border-[#e8c5ce] p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[#1a1412] truncate">{l.servicio.nombre}</p>
+                    {!l.servicio.precio_desde && (
+                      <p className="text-xs text-[#6b6360]">{l.duracion} min · {l.precio.toFixed(2)} €</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => eliminarLinea(l.uid)}
+                    className="text-[#6b6360] hover:text-red-500 transition-colors text-xl leading-none flex-shrink-0"
+                  >
+                    ×
+                  </button>
+                </div>
+                {l.servicio.precio_desde && l.variantes.length > 0 && (
+                  <select
+                    value={l.varianteId}
+                    onChange={(e) => cambiarVariante(l.uid, e.target.value)}
+                    className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#C4728A]"
+                  >
+                    <option value="">Selecciona tamaño...</option>
+                    {l.variantes.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.nombre} — {v.duracion_min} min — {Number(v.precio).toFixed(2)} €
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            ))}
+
+            {/* Totales */}
+            {listo && (
+              <div className="flex justify-between text-xs text-[#6b6360] px-1">
+                <span>{lineas.length} servicio{lineas.length > 1 ? "s" : ""} · {totalDuracion} min en total</span>
+                <span className="font-semibold text-[#1a1412]">{totalPrecio.toFixed(2)} €</span>
+              </div>
+            )}
+
+            {/* Picker inline — nunca con position absolute para evitar recorte del modal */}
+            {pickerAbierto ? (
+              <div className="border border-[#C4728A] rounded-xl overflow-hidden bg-white">
+                <div className="p-2 border-b border-[#f4f1ef]">
+                  <Input
+                    ref={busquedaRef}
+                    placeholder="Buscar servicio..."
+                    value={busquedaServicio}
+                    onChange={(e) => setBusquedaServicio(e.target.value)}
+                    className="border-[#e8c5ce] focus-visible:ring-[#C4728A] text-sm"
+                  />
+                </div>
+                <div className="max-h-52 overflow-y-auto">
+                  {serviciosFiltrados.length === 0 && (
+                    <p className="text-xs text-[#6b6360] px-3 py-4 text-center">Sin resultados</p>
+                  )}
+                  {serviciosFiltrados.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => agregarServicio(s)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-[#f7e8ed] transition-colors border-b border-[#f4f1ef] last:border-0"
+                    >
+                      <span className="font-medium text-[#1a1412]">{s.nombre}</span>
+                      <span className="text-xs text-[#6b6360] ml-2">
+                        {s.precio_desde
+                          ? `desde ${Number(s.precio).toFixed(0)} €`
+                          : `${Number(s.precio).toFixed(2)} €`}
+                        {" · "}{s.duracion_min} min
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPickerAbierto(false)}
+                  className="w-full text-xs text-[#6b6360] py-2 hover:bg-[#f4f1ef] transition-colors border-t border-[#f4f1ef]"
+                >
+                  Cerrar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={abrirPicker}
+                className="w-full border border-dashed border-[#C4728A] text-[#C4728A] rounded-xl py-2 text-sm hover:bg-[#f7e8ed] transition-colors"
               >
-                <option value="">Selecciona el tamaño...</option>
-                {variantes.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.nombre} — {v.duracion_min}min — {Number(v.precio).toFixed(2)}€
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+                + Añadir servicio
+              </button>
+            )}
+          </div>
 
           {/* Profesional */}
           <div>
@@ -401,7 +489,6 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
             Poner hora manual (fuera de horario del salón)
           </label>
 
-          {/* Hora manual */}
           {horaManual && (
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -426,49 +513,59 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
             </div>
           )}
 
-          {/* Slots normales */}
-          {!horaManual && slots.length > 0 && (
+          {/* Slots */}
+          {!horaManual && listo && (
             <div>
               <Label className="text-xs text-[#6b6360]">Hora disponible *</Label>
-              <div className="mt-2 grid grid-cols-4 gap-2">
-                {slots.map((slot) => (
-                  <button
-                    key={slot.hora_inicio}
-                    type="button"
-                    disabled={!slot.disponible}
-                    onClick={() => setSlotSeleccionado(slot)}
-                    className={`text-xs py-2 rounded-lg border transition-colors ${
-                      !slot.disponible
-                        ? "opacity-30 cursor-not-allowed border-[#e8c5ce] bg-[#f4f1ef]"
-                        : slotSeleccionado?.hora_inicio === slot.hora_inicio
-                        ? "bg-[#C4728A] text-white border-[#C4728A]"
-                        : "border-[#e8c5ce] hover:border-[#C4728A] hover:text-[#C4728A] bg-white"
-                    }`}
-                  >
-                    {slot.hora_inicio}
-                  </button>
-                ))}
-              </div>
+              {loadingSlots ? (
+                <p className="text-xs text-[#6b6360] text-center py-3">Buscando horas...</p>
+              ) : slots.length > 0 ? (
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {slots.map((slot) => (
+                    <button
+                      key={slot.hora_inicio}
+                      type="button"
+                      disabled={!slot.disponible}
+                      onClick={() => setSlotSeleccionado(slot)}
+                      className={`text-xs py-2 rounded-lg border transition-colors ${
+                        !slot.disponible
+                          ? "opacity-30 cursor-not-allowed border-[#e8c5ce] bg-[#f4f1ef]"
+                          : slotSeleccionado?.hora_inicio === slot.hora_inicio
+                          ? "bg-[#C4728A] text-white border-[#C4728A]"
+                          : "border-[#e8c5ce] hover:border-[#C4728A] hover:text-[#C4728A] bg-white"
+                      }`}
+                    >
+                      {slot.hora_inicio}
+                    </button>
+                  ))}
+                </div>
+              ) : profesionalId && fecha ? (
+                <p className="text-sm text-[#6b6360] text-center py-2">
+                  Sin horas disponibles. Usa la opción de hora manual.
+                </p>
+              ) : null}
             </div>
           )}
 
-          {!horaManual && profesionalId && servicioId && fecha && duracion && slots.length === 0 && (
-            <p className="text-sm text-[#6b6360] text-center py-2">
-              Sin horas disponibles. Usa la opción de hora manual si necesitas reservar fuera de horario.
-            </p>
-          )}
-
           {/* Resumen */}
-          {(slotSeleccionado || (horaManual && horaInicioManual)) && servicioSeleccionado && (
+          {(slotSeleccionado || (horaManual && horaInicioManual)) && listo && (
             <div className="bg-[#1a1412] rounded-xl p-4 text-white text-sm">
               <p className="font-medium mb-2 text-[#C4728A]">Resumen</p>
-              <p>{servicioSeleccionado.nombre}{varianteSeleccionada ? ` — ${varianteSeleccionada.nombre}` : ""}</p>
-              <p className="text-[#f7e8ed]">
+              {lineas.map((l) => {
+                const variante = l.variantes.find((v) => v.id === l.varianteId);
+                return (
+                  <p key={l.uid} className="text-[#f7e8ed] text-xs">
+                    {l.servicio.nombre}{variante ? ` — ${variante.nombre}` : ""}
+                  </p>
+                );
+              })}
+              <p className="mt-1 text-[#f7e8ed]">
                 {format(new Date(fecha + "T12:00:00"), "dd/MM/yyyy")} a las{" "}
                 {horaManual ? horaInicioManual : slotSeleccionado!.hora_inicio}
-                {horaManual && horaFinManual ? ` – ${horaFinManual}` : ""}
+                {" – "}
+                {horaManual ? horaFinManual : slotSeleccionado!.hora_fin}
               </p>
-              <p className="text-[#C4728A] font-semibold mt-1">{precioDisplay}</p>
+              <p className="text-[#C4728A] font-semibold mt-1">{totalPrecio.toFixed(2)} €</p>
             </div>
           )}
 

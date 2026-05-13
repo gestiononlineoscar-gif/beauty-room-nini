@@ -72,6 +72,16 @@ export interface DiaLibre {
 
 export type EstadoReserva = "pendiente" | "confirmada" | "completada" | "cancelada" | "no_presentada";
 
+export interface ReservaServicio {
+  id: string;
+  reserva_id: string;
+  servicio_id: string;
+  variante_id: string | null;
+  orden: number;
+  servicios?: Servicio;
+  variante?: ServicioVariante | null;
+}
+
 export interface Reserva {
   id: string;
   cliente_id: string | null;
@@ -92,6 +102,7 @@ export interface Reserva {
   profesionales?: Profesional;
   servicios?: Servicio;
   variante?: ServicioVariante | null;
+  reserva_servicios?: ReservaServicio[];
 }
 
 export interface Usuario {

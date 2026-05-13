@@ -78,7 +78,7 @@ create table if not exists reservas (
   fecha date not null,
   hora_inicio time not null,
   hora_fin time not null,
-  estado text default 'pendiente' check (estado in ('pendiente','confirmada','completada','cancelada')),
+  estado text default 'pendiente' check (estado in ('pendiente','confirmada','completada','cancelada','no_presentada')),
   notas text,
   created_at timestamptz default now()
 );
