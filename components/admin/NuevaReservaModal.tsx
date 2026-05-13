@@ -110,13 +110,20 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
   useEffect(() => {
     if (horaManual) return;
     setSlots([]);
-    setSlotSeleccionado(null);
-    if (!profesionalId || !fecha || !listo) return;
+    if (!profesionalId || !fecha || !listo) { setSlotSeleccionado(null); return; }
     setLoadingSlots(true);
     fetch(`/api/slots?profesional_id=${profesionalId}&fecha=${fecha}&duracion_min=${totalDuracion}`)
       .then((r) => r.json())
-      .then((data) => setSlots(Array.isArray(data) ? data : []))
-      .catch(() => setSlots([]))
+      .then((data) => {
+        const nuevos: SlotDisponible[] = Array.isArray(data) ? data : [];
+        setSlots(nuevos);
+        // Conservar el slot elegido si sigue disponible con la nueva duración
+        setSlotSeleccionado((prev) => {
+          if (!prev) return null;
+          return nuevos.find((s) => s.disponible && s.hora_inicio === prev.hora_inicio) ?? null;
+        });
+      })
+      .catch(() => { setSlots([]); setSlotSeleccionado(null); })
       .finally(() => setLoadingSlots(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profesionalId, fecha, totalDuracion, listo, horaManual]);
@@ -169,8 +176,6 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
 
   async function agregarServicio(servicio: Servicio) {
     setBusquedaServicio("");
-    setSlotSeleccionado(null);
-    // Mantener el picker abierto para añadir más servicios fácilmente
     busquedaRef.current?.focus();
 
     let variantes: ServicioVariante[] = [];
@@ -204,7 +209,7 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
         return { ...l, varianteId, duracion: v?.duracion_min ?? 0, precio: v ? Number(v.precio) : 0 };
       })
     );
-    setSlotSeleccionado(null);
+    // El slot se revalida automáticamente en el useEffect de slots
   }
 
   function eliminarLinea(uid: string) {
