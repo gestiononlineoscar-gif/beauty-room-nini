@@ -176,7 +176,6 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
 
   async function agregarServicio(servicio: Servicio) {
     setBusquedaServicio("");
-    busquedaRef.current?.focus();
 
     let variantes: ServicioVariante[] = [];
     if (servicio.precio_desde) {
@@ -185,6 +184,9 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
         const data = await res.json();
         if (Array.isArray(data)) variantes = data;
       } catch {}
+      setPickerAbierto(false);
+    } else {
+      busquedaRef.current?.focus();
     }
 
     setLineas((prev) => [
@@ -379,18 +381,25 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
                   </button>
                 </div>
                 {l.servicio.precio_desde && l.variantes.length > 0 && (
-                  <select
-                    value={l.varianteId}
-                    onChange={(e) => cambiarVariante(l.uid, e.target.value)}
-                    className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#C4728A]"
-                  >
-                    <option value="">Selecciona tamaño...</option>
-                    {l.variantes.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.nombre} — {v.duracion_min} min — {Number(v.precio).toFixed(2)} €
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <p className={`text-xs font-medium mb-1 ${!l.varianteId ? "text-[#C4728A]" : "text-[#6b6360]"}`}>
+                      {!l.varianteId ? "⚠ Selecciona el tamaño para continuar" : "Tamaño seleccionado"}
+                    </p>
+                    <select
+                      value={l.varianteId}
+                      onChange={(e) => cambiarVariante(l.uid, e.target.value)}
+                      className={`w-full border rounded-lg px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#C4728A] ${
+                        !l.varianteId ? "border-[#C4728A] border-2 font-medium" : "border-[#e8c5ce]"
+                      }`}
+                    >
+                      <option value="">— Elige el tamaño —</option>
+                      {l.variantes.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.nombre} — {v.duracion_min} min — {Number(v.precio).toFixed(2)} €
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 )}
               </div>
             ))}
