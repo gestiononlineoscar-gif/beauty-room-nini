@@ -72,7 +72,7 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
 
   const totalDuracion = lineas.reduce((sum, l) => sum + l.duracion, 0);
   const totalPrecio = lineas.reduce((sum, l) => sum + l.precio, 0);
-  const lineasSinVariante = lineas.filter((l) => l.servicio.precio_desde && !l.varianteId);
+  const lineasSinVariante = lineas.filter((l) => l.servicio.precio_desde && l.variantes.length > 0 && !l.varianteId);
   const listo = lineas.length > 0 && totalDuracion > 0 && lineasSinVariante.length === 0;
 
   // Reset al abrir
@@ -197,8 +197,8 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
         varianteId: "",
         servicio,
         variantes,
-        duracion: servicio.precio_desde ? 0 : servicio.duracion_min,
-        precio: servicio.precio_desde ? 0 : Number(servicio.precio),
+        duracion: (servicio.precio_desde && variantes.length > 0) ? 0 : servicio.duracion_min,
+        precio: (servicio.precio_desde && variantes.length > 0) ? 0 : Number(servicio.precio),
       },
     ]);
   }
