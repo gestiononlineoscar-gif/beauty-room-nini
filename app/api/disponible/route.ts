@@ -46,8 +46,12 @@ export async function GET(req: NextRequest) {
 
   if (!excepcion && !horario?.trabaja) return NextResponse.json({ disponible: false });
 
-  const turnoInicio = parse((excepcion?.hora_inicio ?? horario.hora_inicio) as string, "HH:mm:ss", baseDate);
-  const turnoFin    = parse((excepcion?.hora_fin    ?? horario.hora_fin)    as string, "HH:mm:ss", baseDate);
+  const turnoInicioStr = excepcion?.hora_inicio ?? horario?.hora_inicio;
+  const turnoFinStr    = excepcion?.hora_fin    ?? horario?.hora_fin;
+  if (!turnoInicioStr || !turnoFinStr) return NextResponse.json({ disponible: false });
+
+  const turnoInicio = parse(turnoInicioStr as string, "HH:mm:ss", baseDate);
+  const turnoFin    = parse(turnoFinStr    as string, "HH:mm:ss", baseDate);
   if (isBefore(inicio, turnoInicio) || isAfter(fin, turnoFin)) {
     return NextResponse.json({ disponible: false });
   }
