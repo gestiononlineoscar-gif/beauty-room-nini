@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
-import { Pencil, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Pencil, X, ChevronLeft, ChevronRight, Trash2, History } from "lucide-react";
 import type { Cliente } from "@/types";
 
 const LIMIT = 50;
@@ -28,6 +28,11 @@ export function ClientesLista() {
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ nombre: "", telefono: "", email: "", notas: "", inasistencias: 0, bloqueado: false });
   const [guardando, setGuardando] = useState(false);
+  const [clienteHistorial, setClienteHistorial] = useState<Cliente | null>(null);
+  const [historial, setHistorial] = useState<Record<string, unknown>[]>([]);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+  const [clienteAEliminar, setClienteAEliminar] = useState<Cliente | null>(null);
+  const [eliminando, setEliminando] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounce búsqueda
@@ -112,6 +117,28 @@ export function ClientesLista() {
     if (!res.ok) { toast.error("Error al actualizar el cliente"); return; }
     setClientes((prev) => prev.map((c) => c.id === cliente.id ? { ...c, bloqueado: nuevo } : c));
     toast.success(nuevo ? "Clienta bloqueada" : "Clienta desbloqueada");
+  }
+
+  async function abrirHistorial(c: Cliente) {
+    setClienteHistorial(c);
+    setCargandoHistorial(true);
+    setHistorial([]);
+    const res = await fetch(`/api/clientes/${c.id}`);
+    const data = await res.json();
+    setHistorial(Array.isArray(data) ? data : []);
+    setCargandoHistorial(false);
+  }
+
+  async function eliminarCliente() {
+    if (!clienteAEliminar) return;
+    setEliminando(true);
+    const res = await fetch(`/api/clientes/${clienteAEliminar.id}`, { method: "DELETE" });
+    setEliminando(false);
+    if (!res.ok) { toast.error("Error al eliminar la clienta"); return; }
+    setClientes((prev) => prev.filter((c) => c.id !== clienteAEliminar.id));
+    setTotal((t) => t - 1);
+    setClienteAEliminar(null);
+    toast.success("Clienta eliminada");
   }
 
   async function exportarCSV() {
@@ -211,7 +238,14 @@ export function ClientesLista() {
                       {format(parseISO(c.created_at), "d MMM yyyy", { locale: es })}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => abrirHistorial(c)}
+                          title="Ver historial"
+                          className="p-1.5 rounded-lg border border-[#e8c5ce] text-[#6b6360] hover:bg-[#f7e8ed] hover:text-[#C4728A] hover:border-[#C4728A] transition-colors"
+                        >
+                          <History size={13} />
+                        </button>
                         <button
                           onClick={() => abrirEdicion(c)}
                           title="Editar cliente"
@@ -228,6 +262,13 @@ export function ClientesLista() {
                           }`}
                         >
                           {c.bloqueado ? "Desbloquear" : "Bloquear"}
+                        </button>
+                        <button
+                          onClick={() => setClienteAEliminar(c)}
+                          title="Eliminar cliente"
+                          className="p-1.5 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </td>
@@ -264,6 +305,93 @@ export function ClientesLista() {
           </div>
         )}
       </div>
+
+      {/* Modal historial */}
+      {clienteHistorial && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-[#fdf6f0] border border-[#e8c5ce] rounded-2xl w-full max-w-lg shadow-xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#e8c5ce] flex-shrink-0">
+              <div>
+                <h2 className="font-heading text-lg text-[#1a1412]">Historial de {clienteHistorial.nombre}</h2>
+                <p className="text-xs text-[#6b6360]">{clienteHistorial.telefono ?? ""}</p>
+              </div>
+              <button onClick={() => setClienteHistorial(null)} className="text-[#6b6360] hover:text-[#C4728A] transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-5">
+              {cargandoHistorial ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-5 h-5 rounded-full border-2 border-[#C4728A] border-t-transparent animate-spin" />
+                </div>
+              ) : historial.length === 0 ? (
+                <p className="text-sm text-[#6b6360] text-center py-8">Sin reservas registradas</p>
+              ) : (
+                <div className="space-y-2">
+                  {historial.map((r: Record<string, unknown>) => {
+                    const servicio = r.servicios as Record<string, unknown> | null;
+                    const profesional = r.profesionales as Record<string, unknown> | null;
+                    const variante = r.variante as Record<string, unknown> | null;
+                    const fecha = r.fecha as string;
+                    const estado = r.estado as string;
+                    return (
+                      <div key={r.id as string} className="bg-white rounded-xl border border-[#e8c5ce] p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-medium text-[#1a1412]">
+                              {servicio?.nombre as string ?? "—"}
+                              {variante ? ` — ${variante.nombre as string}` : ""}
+                            </p>
+                            <p className="text-xs text-[#6b6360]">
+                              {format(parseISO(fecha), "d MMM yyyy", { locale: es })} · {(r.hora_inicio as string)?.slice(0, 5)}
+                              {profesional ? ` · ${profesional.nombre as string}` : ""}
+                            </p>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                            estado === "confirmada" ? "bg-green-100 text-green-700" :
+                            estado === "cancelada" ? "bg-red-100 text-red-600" :
+                            "bg-[#f4f1ef] text-[#6b6360]"
+                          }`}>
+                            {estado}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="px-5 pb-5 flex-shrink-0">
+              <button onClick={() => setClienteHistorial(null)}
+                className="w-full border border-[#e8c5ce] text-[#6b6360] py-2.5 rounded-xl hover:bg-[#f4f1ef] transition-colors text-sm">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmar eliminación */}
+      {clienteAEliminar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-[#fdf6f0] border border-[#e8c5ce] rounded-2xl w-full max-w-sm shadow-xl p-6">
+            <h2 className="font-heading text-lg text-[#1a1412] mb-2">Eliminar clienta</h2>
+            <p className="text-sm text-[#6b6360] mb-5">
+              ¿Segura que quieres eliminar a <span className="font-semibold text-[#1a1412]">{clienteAEliminar.nombre}</span>? Esta acción no se puede deshacer y se borrarán también sus reservas.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setClienteAEliminar(null)}
+                className="flex-1 border border-[#e8c5ce] text-[#6b6360] py-2.5 rounded-xl hover:bg-[#f4f1ef] transition-colors text-sm">
+                Cancelar
+              </button>
+              <button onClick={eliminarCliente} disabled={eliminando}
+                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2.5 rounded-xl font-medium transition-colors text-sm">
+                {eliminando ? "Eliminando..." : "Sí, eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal edición cliente */}
       {clienteEditando && (

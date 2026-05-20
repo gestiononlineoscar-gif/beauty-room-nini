@@ -37,10 +37,17 @@ export async function GET(req: NextRequest) {
     .eq("dia_semana", diaSemana)
     .single();
 
-  if (!horario?.trabaja) return NextResponse.json({ disponible: false });
+  const { data: excepcion } = await supabase
+    .from("horario_excepciones")
+    .select("hora_inicio, hora_fin")
+    .eq("profesional_id", profesionalId)
+    .eq("fecha", fecha)
+    .maybeSingle();
 
-  const turnoInicio = parse(horario.hora_inicio as string, "HH:mm:ss", baseDate);
-  const turnoFin    = parse(horario.hora_fin    as string, "HH:mm:ss", baseDate);
+  if (!excepcion && !horario?.trabaja) return NextResponse.json({ disponible: false });
+
+  const turnoInicio = parse((excepcion?.hora_inicio ?? horario.hora_inicio) as string, "HH:mm:ss", baseDate);
+  const turnoFin    = parse((excepcion?.hora_fin    ?? horario.hora_fin)    as string, "HH:mm:ss", baseDate);
   if (isBefore(inicio, turnoInicio) || isAfter(fin, turnoFin)) {
     return NextResponse.json({ disponible: false });
   }

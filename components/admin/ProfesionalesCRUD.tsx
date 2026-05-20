@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Profesional, Servicio } from "@/types";
 import { DIAS_SEMANA } from "@/types";
-import { Plus, Pencil, Check, X, Clock, Scissors, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Check, X, Clock, Scissors, Eye, EyeOff, CalendarPlus, Trash2 } from "lucide-react";
 import { CATEGORIAS_SERVICIOS } from "@/types";
 
 interface Props {
@@ -34,6 +34,11 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
   const [modalHorarios, setModalHorarios] = useState<{ prof: Profesional; horarios: HorarioProf[] } | null>(null);
   const [guardandoDia, setGuardandoDia] = useState<number | null>(null);
   const [cargandoHorarios, setCargandoHorarios] = useState(false);
+
+  interface Excepcion { id: string; fecha: string; hora_inicio: string; hora_fin: string; motivo: string | null; }
+  const [modalExcepciones, setModalExcepciones] = useState<{ prof: Profesional; excepciones: Excepcion[] } | null>(null);
+  const [nuevaExcepcion, setNuevaExcepcion] = useState({ fecha: "", hora_inicio: "10:00", hora_fin: "15:00", motivo: "" });
+  const [guardandoExcepcion, setGuardandoExcepcion] = useState(false);
 
   const [modalServicios, setModalServicios] = useState<{ prof: Profesional; seleccionados: Set<string> } | null>(null);
   const [guardandoServicios, setGuardandoServicios] = useState(false);
@@ -104,6 +109,40 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
     if (!res.ok) { toast.error("Error al guardar"); return; }
     toast.success("Servicios guardados");
     setModalServicios(null);
+  }
+
+  async function abrirExcepciones(p: Profesional) {
+    const res = await fetch(`/api/horario-excepciones?profesional_id=${p.id}`);
+    const data = await res.json();
+    setModalExcepciones({ prof: p, excepciones: Array.isArray(data) ? data : [] });
+    setNuevaExcepcion({ fecha: "", hora_inicio: "10:00", hora_fin: "15:00", motivo: "" });
+  }
+
+  async function guardarExcepcion() {
+    if (!modalExcepciones || !nuevaExcepcion.fecha) { toast.error("Indica la fecha"); return; }
+    if (nuevaExcepcion.hora_fin <= nuevaExcepcion.hora_inicio) { toast.error("La hora de fin debe ser posterior"); return; }
+    setGuardandoExcepcion(true);
+    const res = await fetch("/api/horario-excepciones", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profesional_id: modalExcepciones.prof.id, ...nuevaExcepcion }),
+    });
+    setGuardandoExcepcion(false);
+    if (!res.ok) { toast.error("Error al guardar"); return; }
+    const data = await res.json();
+    setModalExcepciones((prev) => prev ? {
+      ...prev,
+      excepciones: [...prev.excepciones.filter((e) => e.fecha !== data.fecha), data].sort((a, b) => a.fecha.localeCompare(b.fecha)),
+    } : null);
+    setNuevaExcepcion({ fecha: "", hora_inicio: "10:00", hora_fin: "15:00", motivo: "" });
+    toast.success("Excepción guardada");
+  }
+
+  async function eliminarExcepcion(id: string) {
+    const res = await fetch(`/api/horario-excepciones?id=${id}`, { method: "DELETE" });
+    if (!res.ok) { toast.error("Error al eliminar"); return; }
+    setModalExcepciones((prev) => prev ? { ...prev, excepciones: prev.excepciones.filter((e) => e.id !== id) } : null);
+    toast.success("Excepción eliminada");
   }
 
   async function abrirHorarios(p: Profesional) {
@@ -212,6 +251,10 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
                   className="flex-1 text-xs border border-[#e8c5ce] py-1.5 rounded-xl text-[#6b6360] hover:text-[#C4728A] hover:border-[#C4728A] transition-colors flex items-center justify-center gap-1">
                   <Scissors size={12} /> Servicios
                 </button>
+                <button onClick={() => abrirExcepciones(p)}
+                  className="flex-1 text-xs border border-[#e8c5ce] py-1.5 rounded-xl text-[#6b6360] hover:text-[#C4728A] hover:border-[#C4728A] transition-colors flex items-center justify-center gap-1">
+                  <CalendarPlus size={12} /> Excepciones
+                </button>
                 <button onClick={() => toggleActivo(p)}
                   className={`flex-1 text-xs px-3 py-1.5 rounded-xl border transition-colors ${p.activo ? "border-red-200 text-red-600 hover:bg-red-50" : "border-green-200 text-green-600 hover:bg-green-50"}`}>
                   {p.activo ? "Desactivar" : "Activar"}
@@ -292,6 +335,90 @@ export function ProfesionalesCRUD({ profesionalesIniciales, servicios }: Props) 
                 <Check size={15} /> {guardandoServicios ? "Guardando…" : "Guardar"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal excepciones de horario */}
+      {modalExcepciones && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setModalExcepciones(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+              <div>
+                <h3 className="font-heading text-lg text-[#1a1412]">Excepciones de {modalExcepciones.prof.nombre}</h3>
+                <p className="text-xs text-[#6b6360] mt-0.5">Días con horario especial o días extra</p>
+              </div>
+              <button onClick={() => setModalExcepciones(null)} className="text-[#6b6360] hover:text-[#1a1412]"><X size={18} /></button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 space-y-4">
+              {/* Añadir nueva excepción */}
+              <div className="border border-[#e8c5ce] rounded-xl p-4 space-y-3 bg-[#fdf6f0]">
+                <p className="text-xs font-semibold text-[#1a1412]">Añadir día especial</p>
+                <div>
+                  <label className="text-xs text-[#6b6360] block mb-1">Fecha</label>
+                  <input type="date" value={nuevaExcepcion.fecha}
+                    onChange={(e) => setNuevaExcepcion((p) => ({ ...p, fecha: e.target.value }))}
+                    min={new Date().toISOString().slice(0, 10)}
+                    className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#C4728A] focus:outline-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-[#6b6360] block mb-1">Desde</label>
+                    <input type="time" value={nuevaExcepcion.hora_inicio}
+                      onChange={(e) => setNuevaExcepcion((p) => ({ ...p, hora_inicio: e.target.value }))}
+                      className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#C4728A] focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#6b6360] block mb-1">Hasta</label>
+                    <input type="time" value={nuevaExcepcion.hora_fin}
+                      onChange={(e) => setNuevaExcepcion((p) => ({ ...p, hora_fin: e.target.value }))}
+                      className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#C4728A] focus:outline-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-[#6b6360] block mb-1">Motivo (opcional)</label>
+                  <input type="text" value={nuevaExcepcion.motivo} placeholder="Ej: Horas extra sábado"
+                    onChange={(e) => setNuevaExcepcion((p) => ({ ...p, motivo: e.target.value }))}
+                    className="w-full border border-[#e8c5ce] rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#C4728A] focus:outline-none" />
+                </div>
+                <button onClick={guardarExcepcion} disabled={guardandoExcepcion || !nuevaExcepcion.fecha}
+                  className="w-full bg-[#C4728A] hover:bg-[#a85a72] disabled:opacity-50 text-white py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                  <Check size={14} /> {guardandoExcepcion ? "Guardando…" : "Guardar excepción"}
+                </button>
+              </div>
+
+              {/* Lista de excepciones existentes */}
+              {modalExcepciones.excepciones.length === 0 ? (
+                <p className="text-sm text-[#6b6360] text-center py-4">Sin excepciones programadas</p>
+              ) : (
+                <div className="space-y-2">
+                  {modalExcepciones.excepciones.map((exc) => (
+                    <div key={exc.id} className="flex items-center justify-between gap-2 border border-[#e8c5ce] rounded-xl px-3 py-2.5 bg-white">
+                      <div>
+                        <p className="text-sm font-medium text-[#1a1412]">
+                          {new Date(exc.fecha + "T12:00:00").toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })}
+                        </p>
+                        <p className="text-xs text-[#6b6360]">
+                          {exc.hora_inicio.slice(0, 5)} – {exc.hora_fin.slice(0, 5)}
+                          {exc.motivo ? ` · ${exc.motivo}` : ""}
+                        </p>
+                      </div>
+                      <button onClick={() => eliminarExcepcion(exc.id)}
+                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors flex-shrink-0">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button onClick={() => setModalExcepciones(null)}
+              className="mt-5 w-full border border-[#e8c5ce] text-[#6b6360] py-2.5 rounded-xl text-sm hover:bg-[#f4f1ef] transition-colors flex-shrink-0">
+              Cerrar
+            </button>
           </div>
         </div>
       )}

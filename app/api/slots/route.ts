@@ -30,7 +30,17 @@ export async function GET(req: NextRequest) {
     .eq("dia_semana", diaSemana)
     .single();
 
-  if (!horario || !horario.trabaja) return NextResponse.json([]);
+  const { data: excepcion } = await supabase
+    .from("horario_excepciones")
+    .select("hora_inicio, hora_fin")
+    .eq("profesional_id", profesionalId)
+    .eq("fecha", fecha)
+    .maybeSingle();
+
+  if (!excepcion && (!horario || !horario.trabaja)) return NextResponse.json([]);
+
+  const horarioInicio = excepcion?.hora_inicio ?? horario.hora_inicio;
+  const horarioFin = excepcion?.hora_fin ?? horario.hora_fin;
 
   const { data: diaLibre } = await supabase
     .from("dias_libres")
@@ -57,8 +67,8 @@ export async function GET(req: NextRequest) {
 
   const slots = [];
   const baseDate = new Date(`${fecha}T00:00:00`);
-  let current = parse(horario.hora_inicio as string, "HH:mm:ss", baseDate);
-  const fin = parse(horario.hora_fin as string, "HH:mm:ss", baseDate);
+  let current = parse(horarioInicio as string, "HH:mm:ss", baseDate);
+  const fin = parse(horarioFin as string, "HH:mm:ss", baseDate);
   const finConDuracion = addMinutes(fin, -duracionMin);
   // Comparar en hora local de Madrid (el servidor Vercel corre en UTC)
   const ahoraUTC = new Date();

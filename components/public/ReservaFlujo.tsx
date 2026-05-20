@@ -350,6 +350,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
   async function confirmarReserva() {
     if (!slotSel || !servicioSel || !nombre) return;
     setEnviando(true);
+    try {
 
     // Re-verificar slot S1
     const profIdVerif = cualquiera ? cualquieraProfMap[slotSel.hora_inicio] : profesionalSel?.id;
@@ -471,7 +472,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       const durTotal = duracion + serviciosExtra.reduce((sum, ex) => sum + exDur(ex), 0);
       const precioTotal = precio + serviciosExtra.reduce((sum, ex) => sum + exPrecio(ex), 0);
 
-      await fetch("/api/email-confirmacion", {
+      fetch("/api/email-confirmacion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -488,6 +489,10 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     }
 
     router.push("/reservar/confirmacion");
+    } catch {
+      alert("Error inesperado al confirmar la reserva. Por favor inténtalo de nuevo.");
+      setEnviando(false);
+    }
   }
 
   // ── Calendario ──
