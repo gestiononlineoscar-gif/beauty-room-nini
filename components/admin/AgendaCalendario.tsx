@@ -57,9 +57,13 @@ function reservaToEvent(r: Reserva, colorPorProf: Record<string, string>): Agend
   start.setHours(h1, m1, 0, 0);
   const end = new Date(`${base}T00:00:00`);
   end.setHours(h2, m2, 0, 0);
+  const serviciosNombres =
+    r.reserva_servicios && r.reserva_servicios.length > 0
+      ? r.reserva_servicios.map((rs) => rs.servicios?.nombre ?? "").filter(Boolean).join(" + ")
+      : (r.servicios?.nombre ?? "Servicio");
   return {
     id: r.id,
-    title: `${r.clientes?.nombre ?? "Cliente"} · ${r.servicios?.nombre ?? "Servicio"}`,
+    title: `${r.clientes?.nombre ?? "Cliente"} · ${serviciosNombres}`,
     start, end,
     resource: r,
     resourceId: r.profesional_id ?? "",
@@ -278,9 +282,9 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
     }
   }
 
-  function onReservaCreada(nueva: Reserva) {
-    setReservas((prev) => [...prev, nueva]);
+  function onReservaCreada(_nueva: Reserva) {
     setSlotSeleccionado(null);
+    cargarDatos(fecha, view);
   }
 
   function onReservaActualizada(actualizada: Reserva) {

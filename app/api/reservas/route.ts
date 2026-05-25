@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const { data, error } = await supabase
     .from("reservas")
-    .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
+    .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*), reserva_servicios(*, servicios(*), variante:servicio_variantes(*))")
     .gte("fecha", desde)
     .lte("fecha", hasta)
     .order("fecha")
