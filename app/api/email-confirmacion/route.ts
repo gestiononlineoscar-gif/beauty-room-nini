@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const hace2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const { data: reserva } = await supabase
       .from("reservas")
-      .select("id")
+      .select("id, gestion_token")
       .eq("fecha", datos.fecha)
       .eq("hora_inicio", datos.horaInicio + ":00")
       .gte("created_at", hace2min)
@@ -26,7 +26,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Reserva no encontrada" }, { status: 403 });
     }
 
-    await enviarConfirmacionReserva(datos);
+    const gestionUrl = reserva.gestion_token
+      ? `https://beautyroomnini.es/reserva/${reserva.gestion_token}`
+      : undefined;
+
+    await enviarConfirmacionReserva({ ...datos, gestionUrl });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Error enviando email:", error);

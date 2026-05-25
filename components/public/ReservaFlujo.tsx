@@ -410,16 +410,17 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       }),
     });
 
+    const r1Data = await r1Res.json().catch(() => ({}));
     if (!r1Res.ok) {
-      const errData = await r1Res.json().catch(() => ({}));
       setEnviando(false);
-      if (errData.error === "limite_diario") {
+      if (r1Data.error === "limite_diario") {
         alert("Has alcanzado el máximo de reservas para este día. Llámanos para más información.");
       } else {
         alert("Error al guardar la reserva. Por favor inténtalo de nuevo.");
       }
       return;
     }
+    const gestionToken: string | undefined = r1Data.gestion_token;
 
     // Insertar reservas extra (S2, S3, S4)
     for (const ex of serviciosExtra) {
@@ -484,6 +485,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
           horaInicio: slotSel.hora_inicio,
           duracionMin: durTotal,
           precio: precioTotal,
+          ...(gestionToken ? { gestionUrl: `https://beautyroomnini.es/reserva/${gestionToken}` } : {}),
         }),
       });
     }

@@ -51,13 +51,17 @@ export async function GET(req: NextRequest) {
 
   if (diaLibre) return NextResponse.json([]);
 
+  const excludeReservaId = searchParams.get("exclude_reserva_id");
+  let reservasQuery = supabase
+    .from("reservas")
+    .select("hora_inicio, hora_fin, estado")
+    .eq("profesional_id", profesionalId)
+    .eq("fecha", fecha)
+    .neq("estado", "cancelada");
+  if (excludeReservaId) reservasQuery = reservasQuery.neq("id", excludeReservaId);
+
   const [{ data: reservas }, { data: bloqueos }] = await Promise.all([
-    supabase
-      .from("reservas")
-      .select("hora_inicio, hora_fin, estado")
-      .eq("profesional_id", profesionalId)
-      .eq("fecha", fecha)
-      .neq("estado", "cancelada"),
+    reservasQuery,
     supabase
       .from("bloqueos_horario")
       .select("hora_inicio, hora_fin")

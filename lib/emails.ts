@@ -11,6 +11,7 @@ interface DatosConfirmacion {
   horaInicio: string;
   duracionMin: number;
   precio: number;
+  gestionUrl?: string;
 }
 
 export async function enviarConfirmacionReserva(datos: DatosConfirmacion) {
@@ -109,9 +110,17 @@ export async function enviarConfirmacionReserva(datos: DatosConfirmacion) {
         </tr>
       </table>
 
+      ${datos.gestionUrl ? `
+      <div style="text-align:center;margin-bottom:20px;">
+        <a href="${datos.gestionUrl}"
+           style="display:inline-block;background:#1a1412;color:#f7e8ed;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:700;letter-spacing:0.3px;">
+          Cancelar o modificar mi cita
+        </a>
+        <p style="color:#a08880;font-size:11px;margin:10px 0 0;line-height:1.6;">Con al menos <strong>24 horas</strong> de antelación</p>
+      </div>` : `
       <p style="color:#a08880;font-size:12px;text-align:center;margin:0;line-height:1.6;">
         Si necesitas cancelar o modificar tu cita, contáctanos<br>con al menos <strong>24 horas de antelación</strong>.
-      </p>
+      </p>`}
     </div>
 
     <!-- Footer -->

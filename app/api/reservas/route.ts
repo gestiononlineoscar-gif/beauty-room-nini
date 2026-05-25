@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       hora_fin,
       estado: "confirmada",
     })
-    .select("id")
+    .select("id, gestion_token")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
