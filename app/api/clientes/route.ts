@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data ?? []);
 }
 
-// POST /api/clientes — busca por teléfono; si no existe, crea el cliente
+// POST /api/clientes — busca por teléfono o email; si no existe, crea el cliente
 // Devuelve { id, bloqueado }
 export async function POST(req: NextRequest) {
   const { nombre, telefono, email } = await req.json();
@@ -66,6 +66,15 @@ export async function POST(req: NextRequest) {
       .from("clientes")
       .select("id, bloqueado")
       .eq("telefono", telefono)
+      .maybeSingle();
+    if (existente) return NextResponse.json(existente);
+  }
+
+  if (email) {
+    const { data: existente } = await supabase
+      .from("clientes")
+      .select("id, bloqueado")
+      .eq("email", email)
       .maybeSingle();
     if (existente) return NextResponse.json(existente);
   }
