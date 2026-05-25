@@ -379,14 +379,16 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       body: JSON.stringify({ nombre, telefono, email }),
     });
     if (!clienteRes.ok) {
+      const errCliente = await clienteRes.json().catch(() => ({}));
       setEnviando(false);
+      console.error("Error clientes API:", errCliente);
       alert("Error al registrar tus datos. Por favor inténtalo de nuevo.");
       return;
     }
     const clienteData = await clienteRes.json();
     if (clienteData.bloqueado) {
       setEnviando(false);
-      alert("No es posible realizar reservas online desde esta cuenta. Por favor contacta con el salón.");
+      alert("Esta cuenta está temporalmente bloqueada para reservas online. Por favor llámanos o escríbenos por WhatsApp.");
       return;
     }
     clienteId = clienteData.id;
