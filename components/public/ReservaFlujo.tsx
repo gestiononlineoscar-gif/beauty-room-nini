@@ -339,7 +339,7 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       }
       setConfigurandoExtra(false);
       setVerificandoExtra(false);
-      setPaso(4);
+      setPaso(3);
     } catch {
       setErrorExtra("Error al verificar disponibilidad. Inténtalo de nuevo.");
       setVerificandoExtra(false);
