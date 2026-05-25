@@ -18,7 +18,7 @@ const stepVariants = {
 const cardHover = { scale: 1.02 } as const;
 const cardTap   = { scale: 0.98 } as const;
 
-const ORDINAL_ES = ["segundo", "tercer", "cuarto"] as const;
+const ORDINAL_ES = ["segundo", "tercer", "cuarto", "quinto"] as const;
 
 function normalize(s: string) {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -898,8 +898,8 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
             );
           })}
 
-          {/* Botón añadir servicio extra (máx 3 extras = 4 servicios total) */}
-          {slotSel && serviciosExtra.length < 3 && (
+          {/* Botón añadir servicio extra (máx 4 extras = 5 servicios total) */}
+          {slotSel && serviciosExtra.length < 4 && (
             <motion.button
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}

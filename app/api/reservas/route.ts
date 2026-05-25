@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     .eq("fecha", fecha)
     .neq("estado", "cancelada");
 
-  if ((count ?? 0) >= 3) {
+  if ((count ?? 0) >= 5) {
     return NextResponse.json({ error: "limite_diario" }, { status: 409 });
   }
 
