@@ -30,7 +30,11 @@ export async function POST(req: NextRequest) {
       ? `https://beautyroomnini.es/reserva/${reserva.gestion_token}`
       : undefined;
 
-    await enviarConfirmacionReserva({ ...datos, gestionUrl });
+    const icalUrl = reserva.gestion_token
+      ? `https://beautyroomnini.es/api/ical/${reserva.gestion_token}`
+      : undefined;
+
+    await enviarConfirmacionReserva({ ...datos, gestionUrl, icalUrl });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Error enviando email:", error);

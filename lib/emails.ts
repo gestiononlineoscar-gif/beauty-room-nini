@@ -12,6 +12,7 @@ interface DatosConfirmacion {
   duracionMin: number;
   precio: number;
   gestionUrl?: string;
+  icalUrl?: string;
 }
 
 export async function enviarConfirmacionReserva(datos: DatosConfirmacion) {
@@ -121,6 +122,15 @@ export async function enviarConfirmacionReserva(datos: DatosConfirmacion) {
       <p style="color:#a08880;font-size:12px;text-align:center;margin:0;line-height:1.6;">
         Si necesitas cancelar o modificar tu cita, contáctanos<br>con al menos <strong>24 horas de antelación</strong>.
       </p>`}
+
+      ${datos.icalUrl ? `
+      <div style="text-align:center;margin-bottom:8px;">
+        <a href="${datos.icalUrl}"
+           style="display:inline-block;background:#f4f1ef;color:#1a1412;text-decoration:none;padding:12px 28px;border-radius:12px;font-size:13px;font-weight:600;border:1px solid #e8c5ce;">
+          📅 Añadir al calendario
+        </a>
+        <p style="color:#a08880;font-size:11px;margin:8px 0 0;">Compatible con iPhone, Android y Google Calendar</p>
+      </div>` : ""}
     </div>
 
     <!-- Footer -->
