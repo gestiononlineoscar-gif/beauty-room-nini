@@ -30,10 +30,10 @@ export async function GET(
   const horaFin = (reserva.hora_fin as string).replace(/:/g, "").substring(0, 6);
   const dtStart = `${fechaCompacta}T${horaIni}`;
   const dtEnd   = `${fechaCompacta}T${horaFin}`;
-  const dtstamp = new Date().toISOString().replace(/[-:.]/g, "").replace("000Z", "Z");
+  const dtstamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 
-  const servicio    = (reserva.servicios as { nombre: string } | null)?.nombre ?? "Cita";
-  const profesional = (reserva.profesionales as { nombre: string } | null)?.nombre ?? "";
+  const servicio    = (reserva.servicios as unknown as { nombre: string } | null)?.nombre ?? "Cita";
+  const profesional = (reserva.profesionales as unknown as { nombre: string } | null)?.nombre ?? "";
   const gestionUrl  = `https://beautyroomnini.es/reserva/${token}`;
 
   const descripcion = [

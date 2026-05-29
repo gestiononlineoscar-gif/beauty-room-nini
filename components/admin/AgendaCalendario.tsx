@@ -107,6 +107,11 @@ export function AgendaCalendario({ profesionales, reservasIniciales, bloqueosIni
   const [horarios, setHorarios] = useState<Record<string, HorarioRow[]>>({});
 
   useEffect(() => {
+    const intervalo = setInterval(() => cargarDatos(fecha, view), 2 * 60 * 1000);
+    return () => clearInterval(intervalo);
+  }, [fecha, view, cargarDatos]);
+
+  useEffect(() => {
     fetch("/api/horario-profesional?todos=true")
       .then((r) => r.json())
       .then((data: HorarioRow[]) => {
