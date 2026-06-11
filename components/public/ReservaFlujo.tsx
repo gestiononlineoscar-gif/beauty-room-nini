@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isBefore, startOfDay, getDay, addMinutes, parse } from "date-fns";
@@ -99,7 +99,10 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
     profesional: Profesional | null;
     cualquiera: boolean;
     cualquieraProfMap: Record<string, string>;
+    slotSel: SlotDisponible | null;
+    slots: SlotDisponible[];
   } | null>(null);
+  const restorandoBackupRef = useRef(false);
   const [verificandoExtra, setVerificandoExtra] = useState(false);
   const [errorExtra, setErrorExtra] = useState("");
 
@@ -140,6 +143,10 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
   }, [servicioSel?.id]);
 
   useEffect(() => {
+    if (restorandoBackupRef.current) {
+      restorandoBackupRef.current = false;
+      return;
+    }
     setSlots([]);
     setSlotSel(null);
   }, [varianteSel?.id]);
@@ -238,6 +245,8 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       profesional: profesionalSel,
       cualquiera,
       cualquieraProfMap,
+      slotSel,
+      slots,
     });
     setServicioSel(null);
     setVarianteSel(null);
@@ -254,12 +263,15 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
 
   function cancelarExtra() {
     if (s1Backup) {
+      restorandoBackupRef.current = true;
       setServicioSel(s1Backup.servicio);
       setVarianteSel(s1Backup.variante);
       setVariantes([]);
       setProfesionalSel(s1Backup.profesional);
       setCualquiera(s1Backup.cualquiera);
       setCualquieraProfMap(s1Backup.cualquieraProfMap);
+      setSlotSel(s1Backup.slotSel);
+      setSlots(s1Backup.slots);
       setS1Backup(null);
     }
     setConfigurandoExtra(false);
@@ -329,12 +341,15 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       setServiciosExtra((prev) => [...prev, nuevoExtra]);
 
       if (s1Backup) {
+        restorandoBackupRef.current = true;
         setServicioSel(s1Backup.servicio);
         setVarianteSel(s1Backup.variante);
         setVariantes([]);
         setProfesionalSel(s1Backup.profesional);
         setCualquiera(s1Backup.cualquiera);
         setCualquieraProfMap(s1Backup.cualquieraProfMap);
+        setSlotSel(s1Backup.slotSel);
+        setSlots(s1Backup.slots);
         setS1Backup(null);
       }
       setConfigurandoExtra(false);
