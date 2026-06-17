@@ -92,20 +92,28 @@ export default function GestionReservaPage() {
       const vars = await fetch(`/api/servicio-variantes?servicio_id=${s.id}`).then(r => r.json());
       const lista: Variante[] = Array.isArray(vars) ? vars : [];
       setVariantes(lista);
-      setPaso(lista.length > 0 ? 1 : 2);
+      if (lista.length > 0) {
+        setPaso(1);
+      } else {
+        setPaso(2);
+        if (fecha) cargarSlots(fecha, s, null);
+      }
     } else {
       setVariantes([]);
       setPaso(2);
+      if (fecha) cargarSlots(fecha, s, null);
     }
   }
 
-  async function cargarSlots(f: string) {
-    if (!reserva?.profesionales?.id || !servicioSel) return;
+  async function cargarSlots(f: string, svc?: Servicio | null, vrnt?: Variante | null) {
+    const servicio = svc !== undefined ? svc : servicioSel;
+    const variante = vrnt !== undefined ? vrnt : varianteSel;
+    if (!reserva?.profesionales?.id || !servicio) return;
     setFecha(f);
     setCargandoSlots(true);
     setSlots([]);
     setSlotSel(null);
-    const dur = varianteSel?.duracion_min ?? servicioSel.duracion_min;
+    const dur = variante?.duracion_min ?? servicio.duracion_min;
     const res = await fetch(
       `/api/slots?profesional_id=${reserva.profesionales.id}&fecha=${f}&duracion_min=${dur}&exclude_reserva_id=${reserva.id}`
     );
@@ -366,7 +374,11 @@ export default function GestionReservaPage() {
                 {paso === 1 ? (
                   <div className="space-y-2">
                     {variantes.map(v => (
-                      <button key={v.id} onClick={() => { setVarianteSel(v); setPaso(2); }}
+                      <button key={v.id} onClick={() => {
+                        setVarianteSel(v);
+                        setPaso(2);
+                        if (fecha) cargarSlots(fecha, servicioSel, v);
+                      }}
                         className="w-full flex items-center justify-between bg-white border border-[#e8c5ce] hover:border-[#C4728A] rounded-xl px-4 py-3 transition-colors">
                         <span className="text-sm font-medium text-[#1a1412]">{v.nombre}</span>
                         <span className="text-sm font-bold text-[#C4728A]">{Number(v.precio).toFixed(2)} €</span>
