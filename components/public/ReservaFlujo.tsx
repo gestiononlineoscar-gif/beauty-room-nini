@@ -432,6 +432,11 @@ export function ReservaFlujo({ servicios, profesionales, profesionalServicios, s
       setEnviando(false);
       if (r1Data.error === "limite_diario") {
         alert("Has alcanzado el máximo de reservas para este día. Llámanos para más información.");
+      } else if (r1Data.error === "no_disponible" || r1Data.error === "bloqueado") {
+        alert("Lo sentimos, ese horario ya no está disponible. Por favor elige otro.");
+        setSlotSel(null);
+        setSlots([]);
+        setPaso(3);
       } else {
         alert("Error al guardar la reserva. Por favor inténtalo de nuevo.");
       }

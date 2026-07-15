@@ -151,7 +151,12 @@ export default function GestionReservaPage() {
     });
     setGuardando(false);
     if (!res.ok) {
-      setErrMsg("Error al modificar. Por favor inténtalo de nuevo.");
+      const data = await res.json().catch(() => ({}));
+      setErrMsg(
+        data.error === "no_disponible" || data.error === "bloqueado"
+          ? "Lo sentimos, ese horario ya no está disponible. Por favor elige otro."
+          : "Error al modificar. Por favor inténtalo de nuevo."
+      );
       return;
     }
     setVista("ok_modificar");

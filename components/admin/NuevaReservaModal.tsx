@@ -253,13 +253,13 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
     const horaInicio = horaManual ? horaInicioManual + ":00" : slotSeleccionado!.hora_inicio + ":00";
     const horaFin    = horaManual ? horaFinManual    + ":00" : slotSeleccionado!.hora_fin    + ":00";
 
-    const { createClient } = await import("@/lib/supabase");
-    const supabase = createClient();
-
     const primera = lineas[0];
-    const { data: reserva, error } = await supabase
-      .from("reservas")
-      .insert({
+    const resto = lineas.slice(1);
+
+    const res = await fetch("/api/reservas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         cliente_id: clienteId,
         profesional_id: profesionalId,
         servicio_id: primera.servicioId,
@@ -267,28 +267,23 @@ export function NuevaReservaModal({ open, onClose, fechaInicial, profesionales, 
         fecha,
         hora_inicio: horaInicio,
         hora_fin: horaFin,
-        estado: "confirmada",
-      })
-      .select("*, clientes(*), profesionales(*), servicios(*), variante:servicio_variantes(*)")
-      .single();
+        servicios_extra: resto.map((l) => ({ servicio_id: l.servicioId, variante_id: l.varianteId || null })),
+      }),
+    });
 
-    if (error) { toast.error("Error al crear la reserva"); setLoading(false); return; }
+    const data = await res.json().catch(() => ({}));
+    setLoading(false);
 
-    if (lineas.length > 1) {
-      const { error: errLineas } = await supabase.from("reserva_servicios").insert(
-        lineas.map((l, i) => ({
-          reserva_id: reserva.id,
-          servicio_id: l.servicioId,
-          variante_id: l.varianteId || null,
-          orden: i,
-        }))
-      );
-      if (errLineas) console.error("reserva_servicios:", errLineas.message);
+    if (!res.ok) {
+      if (data.error === "bloqueado") toast.error("Ese horario está bloqueado para esta profesional.");
+      else if (data.error === "no_disponible") toast.error("Ese horario ya no está disponible. Elige otro.");
+      else if (data.error === "error_guardando_servicios") toast.error("No se pudieron guardar todos los servicios. Inténtalo de nuevo.");
+      else toast.error("Error al crear la reserva");
+      return;
     }
 
     toast.success("Reserva creada correctamente");
-    onCreada(reserva as Reserva);
-    setLoading(false);
+    onCreada(data as Reserva);
   }
 
   return (
